@@ -19,7 +19,7 @@ This is a custom component for Home Assistant that integrates with EPB (Electric
 2. Click on "Integrations"
 3. Click the three dots in the top right corner
 4. Select "Custom repositories"
-5. Add this repository URL: `https://github.com/yourusername/ha-epb`
+5. Add this repository URL: `https://github.com/asachs01/ha-epb`
 6. Select category: "Integration"
 7. Click "Add"
 8. Click "Install" on the EPB integration card
