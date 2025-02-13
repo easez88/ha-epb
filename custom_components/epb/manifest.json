@@ -1,0 +1,12 @@
+{
+    "domain": "epb",
+    "name": "Electric Power Board (EPB)",
+    "documentation": "https://github.com/asachs01/ha-epb",
+    "issue_tracker": "https://github.com/asachs01/ha-epb/issues",
+    "codeowners": ["@asachs01"],
+    "config_flow": true,
+    "version": "1.0.0",
+    "iot_class": "cloud_polling",
+    "requirements": ["aiohttp>=3.8.0"],
+    "homeassistant": "2024.1.0"
+} 

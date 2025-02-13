@@ -1,0 +1,17 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Connect to EPB",
+                "description": "Please enter your EPB credentials",
+                "data": {
+                    "username": "Username",
+                    "password": "Password"
+                }
+            }
+        },
+        "error": {
+            "auth": "Username or password is incorrect."
+        }
+    }
+} 
