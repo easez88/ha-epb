@@ -2,7 +2,7 @@
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
 
-This is a custom component for Home Assistant that integrates with EPB (Electric Power Board) to provide energy usage and cost data.
+This is a custom component for Home Assistant that integrates with EPB (Electric Power Board) to provide energy usage and cost data. Many thanks to [@bradwick](https://github.com/bradwick) for the initial implementation in nodered.
 
 ## Features
 
