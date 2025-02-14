@@ -29,60 +29,51 @@ class EPBDataUpdateCoordinator(DataUpdateCoordinator):
             async_get_clientsession(hass),
         )
         self.accounts = []
+        self._account_details = {}
 
-    async def _async_update_data(self):
-        """Update data via library."""
+    async def _async_update_data(self) -> dict:
+        """Fetch data from API."""
         try:
-            # First, get all accounts
             if not self.accounts:
                 self.accounts = await self.api.get_account_links()
-                _LOGGER.debug("Found accounts: %s", [
-                    account["power_account"]["account_id"] 
-                    for account in self.accounts
-                ])
-                if not self.accounts:
-                    raise UpdateFailed("No accounts found")
+                # Store account details for later use
+                for account in self.accounts:
+                    account_id = account["power_account"]["account_id"]
+                    self._account_details[account_id] = {
+                        "service_address": account["premise"].get("address", "Unknown Address"),
+                        "gis_id": account["power_account"].get("gis_id"),
+                    }
 
-            # Then get usage data for each account
             data = {}
             for account in self.accounts:
                 account_id = account["power_account"]["account_id"]
-                gis_id = account["premise"]["gis_id"]
+                gis_id = account["power_account"].get("gis_id")
                 
-                _LOGGER.debug("Fetching usage data for account %s", account_id)
-                usage = await self.api.get_usage_data(account_id, gis_id)
+                usage_data = await self.api.get_usage_data(account_id, gis_id)
                 
-                if usage and "data" in usage:
-                    today_index = datetime.now().day - 1
-                    try:
-                        data[account_id] = {
-                            "kwh": usage["data"][today_index]["a"]["values"]["pos_kwh"],
-                            "cost": usage["data"][today_index]["a"]["values"]["pos_wh_est_cost"],
-                            "account_number": account_id
-                        }
-                        _LOGGER.debug(
-                            "Got usage data for account %s: %s",
-                            account_id,
-                            data[account_id]
-                        )
-                    except (KeyError, IndexError) as err:
-                        _LOGGER.error(
-                            "Error parsing usage data for account %s: %s. Data: %s",
-                            account_id,
-                            err,
-                            usage
-                        )
+                if usage_data and "daily_usage" in usage_data:
+                    # Get the most recent day's usage
+                    latest_usage = usage_data["daily_usage"][-1] if usage_data["daily_usage"] else {}
+                    
+                    data[account_id] = {
+                        "kwh": float(latest_usage.get("kwh", 0)),
+                        "service_address": self._account_details[account_id]["service_address"],
+                        "gis_id": gis_id,
+                    }
                 else:
-                    _LOGGER.warning(
-                        "No usage data returned for account %s",
-                        account_id
-                    )
-
-            if not data:
-                raise UpdateFailed("No usage data found for any account")
+                    _LOGGER.warning("No usage data available for account %s", account_id)
+                    data[account_id] = {
+                        "kwh": 0,
+                        "service_address": self._account_details[account_id]["service_address"],
+                        "gis_id": gis_id,
+                    }
 
             return data
 
         except Exception as err:
-            _LOGGER.error("Error communicating with API: %s", err)
-            raise UpdateFailed(f"Error communicating with API: {err}") 
+            _LOGGER.error("Error updating EPB data: %s", err)
+            raise UpdateFailed(f"Error communicating with API: {err}")
+
+    def get_account_details(self, account_id: str) -> dict:
+        """Get stored account details."""
+        return self._account_details.get(account_id, {}) 

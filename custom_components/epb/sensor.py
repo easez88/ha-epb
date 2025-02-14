@@ -8,12 +8,13 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfEnergy, CURRENCY_DOLLAR
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
 )
+from homeassistant.helpers.entity import DeviceInfo
 
 from .const import DOMAIN
 from .coordinator import EPBDataUpdateCoordinator
@@ -53,27 +54,63 @@ class EPBEnergySensor(CoordinatorEntity, SensorEntity):
         super().__init__(coordinator)
         self._account_id = account_id
         self._attr_unique_id = f"{account_id}_energy"
-        self._attr_name = f"EPB Energy {account_id}"
+        
+        # Get account details from the coordinator
+        account_details = coordinator.get_account_details(account_id)
+        service_address = account_details.get("service_address", f"Account {account_id}")
+        
+        self._attr_name = f"EPB Energy - {service_address}"
+        self._attr_extra_state_attributes = {
+            "account_number": account_id,
+            "service_address": service_address,
+        }
 
     @property
-    def native_value(self) -> StateType:
+    def native_value(self) -> float | None:
         """Return the state of the sensor."""
         try:
-            if self.coordinator.data and self._account_id in self.coordinator.data:
-                return self.coordinator.data[self._account_id]["kwh"]
-            _LOGGER.warning(
-                "No data available for account %s. Available accounts: %s",
-                self._account_id,
-                list(self.coordinator.data.keys()) if self.coordinator.data else "none"
-            )
-            return None
+            if not self.coordinator.data:
+                _LOGGER.warning("No data available from coordinator")
+                return None
+                
+            if self._account_id not in self.coordinator.data:
+                _LOGGER.warning(
+                    "Account %s not found in coordinator data. Available accounts: %s",
+                    self._account_id,
+                    list(self.coordinator.data.keys())
+                )
+                return None
+                
+            account_data = self.coordinator.data[self._account_id]
+            if "kwh" not in account_data:
+                _LOGGER.warning(
+                    "No kwh data for account %s. Available data: %s",
+                    self._account_id,
+                    account_data.keys()
+                )
+                return None
+                
+            return float(account_data["kwh"])
+            
         except Exception as err:
             _LOGGER.error(
                 "Error getting energy value for account %s: %s",
                 self._account_id,
-                err
+                err,
+                exc_info=True
             )
             return None
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        if self.coordinator.data and self._account_id in self.coordinator.data:
+            account_data = self.coordinator.data[self._account_id]
+            # Update any dynamic attributes here if needed
+            self._attr_extra_state_attributes.update({
+                "last_updated": account_data.get("last_updated", "Unknown"),
+            })
+        super()._handle_coordinator_update()
 
 class EPBCostSensor(CoordinatorEntity, SensorEntity):
     """Representation of an EPB Cost sensor."""
