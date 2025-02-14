@@ -69,35 +69,12 @@ class EPBEnergySensor(CoordinatorEntity, SensorEntity):
     def native_value(self) -> float | None:
         """Return the state of the sensor."""
         try:
-            if not self.coordinator.data:
-                _LOGGER.warning("No data available from coordinator")
-                return None
-                
-            if self._account_id not in self.coordinator.data:
-                _LOGGER.warning(
-                    "Account %s not found in coordinator data. Available accounts: %s",
-                    self._account_id,
-                    list(self.coordinator.data.keys())
-                )
-                return None
-                
-            account_data = self.coordinator.data[self._account_id]
-            if "kwh" not in account_data:
-                _LOGGER.warning(
-                    "No kwh data for account %s. Available data: %s",
-                    self._account_id,
-                    account_data.keys()
-                )
-                return None
-                
-            return float(account_data["kwh"])
-            
-        except Exception as err:
-            _LOGGER.error(
-                "Error getting energy value for account %s: %s",
+            return self.coordinator.data[self._account_id]["kwh"]
+        except (KeyError, TypeError):
+            _LOGGER.warning(
+                "Unable to get data for account %s. Coordinator data: %s",
                 self._account_id,
-                err,
-                exc_info=True
+                self.coordinator.data
             )
             return None
 
