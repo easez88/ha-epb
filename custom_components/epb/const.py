@@ -2,7 +2,9 @@
 from datetime import timedelta
 
 DOMAIN = "epb"
-SCAN_INTERVAL = timedelta(minutes=15)
+
+# Remove the SCAN_INTERVAL constant as we'll use Home Assistant's native mechanisms
+DEFAULT_SCAN_INTERVAL = timedelta(minutes=15)  # We'll use this as a default but allow configuration
 
 # Configuration
 CONF_USERNAME = "username"

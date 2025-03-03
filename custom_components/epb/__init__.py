@@ -2,17 +2,25 @@
 from __future__ import annotations
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform
+from homeassistant.const import Platform, CONF_USERNAME, CONF_PASSWORD, CONF_SCAN_INTERVAL
 from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN
-from .coordinator import EPBDataUpdateCoordinator
+from .api import EPBApiClient
+from .const import DOMAIN, DEFAULT_SCAN_INTERVAL
+from .coordinator import EPBUpdateCoordinator
 
 PLATFORMS: list[Platform] = [Platform.SENSOR]
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up EPB from a config entry."""
-    coordinator = EPBDataUpdateCoordinator(hass, entry)
+    client = EPBApiClient(
+        username=entry.data[CONF_USERNAME],
+        password=entry.data[CONF_PASSWORD],
+        session=hass.helpers.aiohttp_client.async_get_clientsession()
+    )
+
+    scan_interval = entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+    coordinator = EPBUpdateCoordinator(hass, client, scan_interval)
     await coordinator.async_config_entry_first_refresh()
     
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator

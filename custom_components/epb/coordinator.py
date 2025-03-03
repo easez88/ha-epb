@@ -1,79 +1,79 @@
-"""DataUpdateCoordinator for EPB."""
-from datetime import datetime
+"""DataUpdateCoordinator for EPB integration."""
 import logging
+from datetime import timedelta
 
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.exceptions import ConfigEntryAuthFailed
 
 from .api import EPBApiClient
-from .const import DOMAIN, SCAN_INTERVAL
+from .const import DOMAIN, DEFAULT_SCAN_INTERVAL
 
 _LOGGER = logging.getLogger(__name__)
 
-class EPBDataUpdateCoordinator(DataUpdateCoordinator):
+class EPBUpdateCoordinator(DataUpdateCoordinator):
     """Class to manage fetching EPB data."""
 
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
-        """Initialize the coordinator."""
+    def __init__(
+        self, hass: HomeAssistant, client: EPBApiClient, scan_interval: timedelta
+    ) -> None:
+        """Initialize."""
         super().__init__(
             hass,
             _LOGGER,
             name=DOMAIN,
-            update_interval=SCAN_INTERVAL,
+            update_interval=scan_interval,
         )
-        self.api = EPBApiClient(
-            entry.data["username"],
-            entry.data["password"],
-            async_get_clientsession(hass),
-        )
+        self.client = client
         self.accounts = []
-        self._account_details = {}
 
-    async def _async_update_data(self) -> dict:
-        """Fetch data from API."""
+    async def _async_update_data(self):
+        """Update data via library."""
         try:
+            # Get account links first if we don't have them
             if not self.accounts:
-                self.accounts = await self.api.get_account_links()
-                # Store account details for later use
-                for account in self.accounts:
-                    account_id = account["power_account"]["account_id"]
-                    self._account_details[account_id] = {
-                        "service_address": account["premise"].get("address", "Unknown Address"),
-                        "gis_id": account["power_account"].get("gis_id"),
-                    }
+                self.accounts = await self.client.get_account_links()
+                _LOGGER.debug("Initial accounts data: %s", self.accounts)
 
+            # Process each account
             data = {}
             for account in self.accounts:
-                account_id = account["power_account"]["account_id"]
-                gis_id = account["power_account"].get("gis_id")
+                power_account = account.get("power_account", {})
+                account_id = power_account.get("account_id")
+                premise = account.get("premise", {})
                 
-                usage_data = await self.api.get_usage_data(account_id, gis_id)
-                
-                if usage_data and "daily_usage" in usage_data:
-                    # Get the most recent day's usage
-                    latest_usage = usage_data["daily_usage"][-1] if usage_data["daily_usage"] else {}
-                    
-                    data[account_id] = {
-                        "kwh": float(latest_usage.get("kwh", 0)),
-                        "service_address": self._account_details[account_id]["service_address"],
-                        "gis_id": gis_id,
-                    }
-                else:
-                    _LOGGER.warning("No usage data available for account %s", account_id)
-                    data[account_id] = {
-                        "kwh": 0,
-                        "service_address": self._account_details[account_id]["service_address"],
-                        "gis_id": gis_id,
-                    }
+                if not account_id:
+                    continue
+
+                _LOGGER.debug(
+                    "Fetching usage data for account %s with GIS ID %s",
+                    account_id,
+                    premise.get("gis_id")
+                )
+
+                usage_data = await self.client.get_usage_data(
+                    account_id,
+                    premise.get("gis_id")
+                )
+                _LOGGER.debug("Raw usage data for account %s: %s", account_id, usage_data)
+
+                # Process the usage data
+                data[account_id] = {
+                    "kwh": float(usage_data.get("kwh", 0)),
+                    "cost": float(usage_data.get("cost", 0)),
+                    "service_address": premise.get("full_service_address", "Unknown Address"),
+                    "gis_id": premise.get("gis_id"),
+                    "last_updated": None,  # Will be set by HA
+                    "has_usage_data": bool(usage_data),  # True if we got any data
+                    "city": premise.get("city"),
+                    "state": premise.get("state"),
+                    "zip_code": premise.get("zip_code")
+                }
+
+                _LOGGER.debug("Final processed data: %s", data)
 
             return data
 
         except Exception as err:
             _LOGGER.error("Error updating EPB data: %s", err)
-            raise UpdateFailed(f"Error communicating with API: {err}")
-
-    def get_account_details(self, account_id: str) -> dict:
-        """Get stored account details."""
-        return self._account_details.get(account_id, {}) 
+            raise 

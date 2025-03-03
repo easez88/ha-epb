@@ -1,69 +1,68 @@
-"""Support for EPB sensors."""
+"""Sensor platform for EPB integration."""
 from __future__ import annotations
+
+import logging
+from typing import Any
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
     SensorStateClass,
 )
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfEnergy, CURRENCY_DOLLAR
-from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import StateType
-from homeassistant.helpers.update_coordinator import (
-    CoordinatorEntity,
-)
+from homeassistant.core import callback
 from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from .coordinator import EPBUpdateCoordinator
 from .const import DOMAIN
-from .coordinator import EPBDataUpdateCoordinator
-import logging
 
 _LOGGER = logging.getLogger(__name__)
 
-async def async_setup_entry(
-    hass: HomeAssistant,
-    entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
-) -> None:
-    """Set up EPB sensors based on a config entry."""
-    coordinator = hass.data[DOMAIN][entry.entry_id]
+class EPBBaseSensor(CoordinatorEntity, SensorEntity):
+    """Base class for EPB sensors."""
 
-    # Wait for first update
-    await coordinator.async_config_entry_first_refresh()
+    def __init__(
+        self, 
+        coordinator: EPBUpdateCoordinator,
+        account_id: str,
+        address: str,
+    ) -> None:
+        """Initialize the base sensor."""
+        super().__init__(coordinator)
+        self._account_id = account_id
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, account_id)},
+            name=f"EPB - {address}",
+            manufacturer="Electric Power Board",
+        )
 
-    entities = []
-    for account_id, data in coordinator.data.items():
-        entities.extend([
-            EPBEnergySensor(coordinator, account_id),
-            EPBCostSensor(coordinator, account_id),
-        ])
+    @property
+    def available(self) -> bool:
+        """Return if entity is available."""
+        return (
+            self.coordinator.last_update_success and
+            self._account_id in self.coordinator.data and
+            self.coordinator.data[self._account_id].get("has_usage_data", False)
+        )
 
-    async_add_entities(entities)
-
-class EPBEnergySensor(CoordinatorEntity, SensorEntity):
+class EPBEnergySensor(EPBBaseSensor):
     """Representation of an EPB Energy sensor."""
 
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
 
-    def __init__(self, coordinator: EPBDataUpdateCoordinator, account_id: str) -> None:
-        """Initialize the sensor."""
-        super().__init__(coordinator)
-        self._account_id = account_id
-        self._attr_unique_id = f"{account_id}_energy"
-        
-        # Get account details from the coordinator
-        account_details = coordinator.get_account_details(account_id)
-        service_address = account_details.get("service_address", f"Account {account_id}")
-        
-        self._attr_name = f"EPB Energy - {service_address}"
-        self._attr_extra_state_attributes = {
-            "account_number": account_id,
-            "service_address": service_address,
-        }
+    def __init__(
+        self,
+        coordinator: EPBUpdateCoordinator,
+        account_id: str,
+        address: str,
+    ) -> None:
+        """Initialize the energy sensor."""
+        super().__init__(coordinator, account_id, address)
+        self._attr_unique_id = f"epb_energy_{account_id}"
+        self._attr_name = f"EPB Energy - {address}"
 
     @property
     def native_value(self) -> float | None:
@@ -77,48 +76,73 @@ class EPBEnergySensor(CoordinatorEntity, SensorEntity):
                 self.coordinator.data
             )
             return None
+        return float(self.coordinator.data[self._account_id]["kwh"])
 
-    @callback
-    def _handle_coordinator_update(self) -> None:
-        """Handle updated data from the coordinator."""
-        if self.coordinator.data and self._account_id in self.coordinator.data:
-            account_data = self.coordinator.data[self._account_id]
-            # Update any dynamic attributes here if needed
-            self._attr_extra_state_attributes.update({
-                "last_updated": account_data.get("last_updated", "Unknown"),
-            })
-        super()._handle_coordinator_update()
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return additional state attributes."""
+        if not self.coordinator.data or self._account_id not in self.coordinator.data:
+            return {}
+        
+        data = self.coordinator.data[self._account_id]
+        return {
+            "account_number": self._account_id,
+            "service_address": data.get("service_address"),
+            "city": data.get("city"),
+            "state": data.get("state"),
+            "zip_code": data.get("zip_code"),
+        }
 
-class EPBCostSensor(CoordinatorEntity, SensorEntity):
+class EPBCostSensor(EPBBaseSensor):
     """Representation of an EPB Cost sensor."""
 
     _attr_device_class = SensorDeviceClass.MONETARY
     _attr_native_unit_of_measurement = CURRENCY_DOLLAR
     _attr_state_class = SensorStateClass.TOTAL
 
-    def __init__(self, coordinator: EPBDataUpdateCoordinator, account_id: str) -> None:
-        """Initialize the sensor."""
-        super().__init__(coordinator)
-        self._account_id = account_id
-        self._attr_unique_id = f"{account_id}_cost"
-        self._attr_name = f"EPB Cost {account_id}"
+    def __init__(
+        self,
+        coordinator: EPBUpdateCoordinator,
+        account_id: str,
+        address: str,
+    ) -> None:
+        """Initialize the cost sensor."""
+        super().__init__(coordinator, account_id, address)
+        self._attr_unique_id = f"epb_cost_{account_id}"
+        self._attr_name = f"EPB Cost - {address}"
 
     @property
-    def native_value(self) -> StateType:
-        """Return the state of the sensor."""
-        try:
-            if self.coordinator.data and self._account_id in self.coordinator.data:
-                return self.coordinator.data[self._account_id]["cost"]
-            _LOGGER.warning(
-                "No data available for account %s. Available accounts: %s",
-                self._account_id,
-                list(self.coordinator.data.keys()) if self.coordinator.data else "none"
-            )
+    def native_value(self) -> float | None:
+        """Return the cost value."""
+        if not self.available:
             return None
-        except Exception as err:
-            _LOGGER.error(
-                "Error getting cost value for account %s: %s",
-                self._account_id,
-                err
-            )
-            return None 
+        return float(self.coordinator.data[self._account_id]["cost"])
+
+async def async_setup_entry(hass, entry, async_add_entities):
+    """Set up EPB sensors based on a config entry."""
+    coordinator = hass.data[DOMAIN][entry.entry_id]
+
+    # Wait for coordinator to do first update
+    await coordinator.async_config_entry_first_refresh()
+
+    entities = []
+    seen_accounts = set()  # Track accounts we've already processed
+
+    for account in coordinator.accounts:
+        account_id = account["power_account"]["account_id"]
+        
+        # Skip if we've already processed this account
+        if account_id in seen_accounts:
+            continue
+            
+        seen_accounts.add(account_id)
+        
+        # Get the address from the premise data
+        address = account["premise"].get("full_service_address", account_id)
+        
+        entities.extend([
+            EPBEnergySensor(coordinator, account_id, address),
+            EPBCostSensor(coordinator, account_id, address),
+        ])
+
+    async_add_entities(entities) 
