@@ -5,6 +5,8 @@ from datetime import timedelta
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.const import CONF_SCAN_INTERVAL
+import async_timeout
 
 from .api import EPBApiClient
 from .const import DOMAIN, DEFAULT_SCAN_INTERVAL
@@ -15,25 +17,39 @@ class EPBUpdateCoordinator(DataUpdateCoordinator):
     """Class to manage fetching EPB data."""
 
     def __init__(
-        self, hass: HomeAssistant, client: EPBApiClient, scan_interval: timedelta
+        self, 
+        hass: HomeAssistant, 
+        client: EPBApiClient,
+        scan_interval: timedelta | None = None,
     ) -> None:
-        """Initialize."""
+        """Initialize the coordinator."""
+        self.client = client
+        self.accounts = []
+
+        # Use user-configured scan interval or default
+        update_interval = scan_interval or DEFAULT_SCAN_INTERVAL
+
         super().__init__(
             hass,
             _LOGGER,
             name=DOMAIN,
-            update_interval=scan_interval,
+            update_interval=update_interval,
+            # Set always_update to False since we can compare data
+            always_update=False,
         )
-        self.client = client
-        self.accounts = []
 
     async def _async_update_data(self):
-        """Update data via library."""
+        """Fetch data from API endpoint.
+
+        This is the place to pre-process the data to lookup tables
+        so entities can quickly look up their data.
+        """
         try:
-            # Get account links first if we don't have them
+            # If we don't have account links yet, fetch them
             if not self.accounts:
-                self.accounts = await self.client.get_account_links()
-                _LOGGER.debug("Initial accounts data: %s", self.accounts)
+                async with async_timeout.timeout(30):
+                    self.accounts = await self.client.get_account_links()
+                    _LOGGER.debug("Initial accounts data: %s", self.accounts)
 
             # Process each account
             data = {}
@@ -51,10 +67,11 @@ class EPBUpdateCoordinator(DataUpdateCoordinator):
                     premise.get("gis_id")
                 )
 
-                usage_data = await self.client.get_usage_data(
-                    account_id,
-                    premise.get("gis_id")
-                )
+                async with async_timeout.timeout(10):
+                    usage_data = await self.client.get_usage_data(
+                        account_id,
+                        premise.get("gis_id")
+                    )
                 _LOGGER.debug("Raw usage data for account %s: %s", account_id, usage_data)
 
                 # Process the usage data
@@ -63,7 +80,6 @@ class EPBUpdateCoordinator(DataUpdateCoordinator):
                     "cost": float(usage_data.get("cost", 0)),
                     "service_address": premise.get("full_service_address", "Unknown Address"),
                     "gis_id": premise.get("gis_id"),
-                    "last_updated": None,  # Will be set by HA
                     "has_usage_data": bool(usage_data),  # True if we got any data
                     "city": premise.get("city"),
                     "state": premise.get("state"),
@@ -75,5 +91,8 @@ class EPBUpdateCoordinator(DataUpdateCoordinator):
             return data
 
         except Exception as err:
-            _LOGGER.error("Error updating EPB data: %s", err)
+            if "TOKEN_EXPIRED" in str(err):
+                # Force token refresh on next attempt
+                self.client._token = None
+                raise ConfigEntryAuthFailed("Token expired") from err
             raise 
