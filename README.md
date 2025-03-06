@@ -1,6 +1,16 @@
 # EPB Integration for Home Assistant
 
-This integration allows you to monitor your Electric Power Board (EPB) energy usage and cost data in Home Assistant.
+[![GitHub Release][releases-shield]][releases]
+[![GitHub Activity][commits-shield]][commits]
+[![License][license-shield]](LICENSE)
+
+[![hacs][hacsbadge]][hacs]
+[![Project Maintenance][maintenance-shield]][user_profile]
+[![BuyMeCoffee][buymecoffeebadge]][buymecoffee]
+
+![EPB Logo](logo.png)
+
+Home Assistant integration for EPB (Electric Power Board) smart meter data.
 
 ## Features
 
@@ -8,86 +18,71 @@ This integration allows you to monitor your Electric Power Board (EPB) energy us
 - Cost tracking
 - Multiple account support
 - Configurable update intervals
-- Automatic token refresh
 
 ## Installation
 
 ### HACS (Recommended)
 
-1. Open HACS in Home Assistant
-2. Click on "Integrations"
-3. Click the "+" button
-4. Search for "EPB"
-5. Click "Install"
-6. Restart Home Assistant
+1. Install [HACS](https://hacs.xyz/)
+2. Go to HACS > Integrations
+3. Click on the 3 dots in the top right corner
+4. Select "Custom repositories"
+5. Add this repository URL
+6. Select "Integration" as the category
+7. Click "ADD"
+8. Search for "EPB"
+9. Click "INSTALL"
+10. Restart Home Assistant
 
-### Manual Installation
+### Manual
 
 1. Copy the `custom_components/epb` directory to your Home Assistant's `custom_components` directory
 2. Restart Home Assistant
 
 ## Configuration
 
-1. Go to Settings -> Devices & Services
-2. Click "Add Integration"
+1. Go to Settings > Devices & Services
+2. Click "ADD INTEGRATION"
 3. Search for "EPB"
-4. Enter your EPB credentials:
-   - Username (email)
-   - Password
-   - Update interval (optional, defaults to 15 minutes)
+4. Enter your EPB credentials
+5. Configure update interval (optional)
 
-## Entities
+## Sensors
 
-For each EPB account, the integration creates:
+This integration provides the following sensors for each EPB account:
 
-- Energy sensor (kWh)
-  - Shows current energy usage
-  - Includes service address and account details as attributes
-- Cost sensor ($)
-  - Shows current cost
-  - Updates with real-time rate information
+- Energy Usage (kWh)
+- Energy Cost ($)
 
-## Options
-
-You can configure the following options:
-- Update interval (1-60 minutes)
-
-To change options:
-1. Go to Settings -> Devices & Services
-2. Find the EPB integration
-3. Click "Configure"
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Authentication Failed**
-   - Verify your EPB credentials
-   - Check if you can log in to the EPB website
-
-2. **No Data Available**
-   - The integration will show as unavailable if no data is received
-   - Check your EPB account status
-
-3. **Token Expired**
-   - The integration automatically handles token refresh
-   - If persistent, try removing and re-adding the integration
-
-### Debug Logging
-
-To enable debug logging:
-
-```yaml
-logger:
-  default: info
-  logs:
-    custom_components.epb: debug
-```
+Each sensor includes additional attributes:
+- Account Number
+- Service Address
+- City
+- State
+- ZIP Code
 
 ## Contributing
 
-We welcome contributions! Please feel free to submit a Pull Request.
+This is an active open-source project. Feel free to contribute by:
+
+1. Reporting bugs
+2. Suggesting enhancements
+3. Creating pull requests
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+[releases-shield]: https://img.shields.io/github/release/asachs01/ha-epb.svg?style=for-the-badge
+[releases]: https://github.com/asachs01/ha-epb/releases
+[commits-shield]: https://img.shields.io/github/commit-activity/y/asachs01/ha-epb.svg?style=for-the-badge
+[commits]: https://github.com/asachs01/ha-epb/commits/main
+[hacs]: https://github.com/hacs/integration
+[hacsbadge]: https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge
+[license-shield]: https://img.shields.io/github/license/asachs01/ha-epb.svg?style=for-the-badge
+[maintenance-shield]: https://img.shields.io/badge/maintainer-%40asachs01-blue.svg?style=for-the-badge
+[user_profile]: https://github.com/asachs01
+[buymecoffeebadge]: https://img.shields.io/badge/buy%20me%20a%20coffee-donate-yellow.svg?style=for-the-badge
+[buymecoffee]: https://www.buymeacoffee.com/asachs01
