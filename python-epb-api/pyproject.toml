@@ -1,0 +1,33 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "python-epb-api"
+version = "0.1.0"
+description = "Python API client for EPB (Electric Power Board)"
+readme = "README.md"
+authors = [
+    { name = "Aaron Sachs", email = "asachs01@users.noreply.github.com" }
+]
+license = "MIT"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+keywords = ["epb", "api", "client", "energy", "utility"]
+dependencies = [
+    "aiohttp>=3.8.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/asachs01/python-epb-api"
+Repository = "https://github.com/asachs01/python-epb-api.git"
+Issues = "https://github.com/asachs01/python-epb-api/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["epb_api"] 

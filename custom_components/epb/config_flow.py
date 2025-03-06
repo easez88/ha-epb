@@ -12,8 +12,10 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import selector
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .api import EPBApiClient
+from epb_api import EPBApiClient, EPBAuthError, EPBApiError
+
 from .const import DOMAIN, DEFAULT_SCAN_INTERVAL
 
 _LOGGER = logging.getLogger(__name__)
@@ -39,16 +41,23 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
 
 async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
     """Validate the user input allows us to connect."""
+    session = async_get_clientsession(hass)
     client = EPBApiClient(
         username=data[CONF_USERNAME],
         password=data[CONF_PASSWORD],
-        session=hass.helpers.aiohttp_client.async_get_clientsession()
+        session=session
     )
 
     try:
         await client.authenticate()
+    except EPBAuthError:
+        _LOGGER.error("Failed to authenticate: %s", EPBAuthError)
+        raise InvalidAuth from EPBAuthError
+    except EPBApiError:
+        _LOGGER.error("Failed to connect to EPB: %s", EPBApiError)
+        raise InvalidAuth from EPBApiError
     except Exception as err:
-        _LOGGER.error("Failed to authenticate: %s", err)
+        _LOGGER.error("Unexpected exception: %s", err)
         raise InvalidAuth from err
 
     # Convert scan_interval from minutes to timedelta
@@ -58,7 +67,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     # Return info to be stored in the config entry
     return {"title": f"EPB ({data[CONF_USERNAME]})"}
 
-class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+class EPBConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for EPB."""
 
     VERSION = 1
@@ -73,18 +82,32 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle the initial step."""
-        errors: dict[str, str] = {}
+        errors = {}
 
         if user_input is not None:
+            session = async_get_clientsession(self.hass)
+            client = EPBApiClient(
+                user_input[CONF_USERNAME],
+                user_input[CONF_PASSWORD],
+                session,
+            )
+
             try:
-                info = await validate_input(self.hass, user_input)
-            except InvalidAuth:
+                await client.authenticate()
+            except EPBAuthError:
                 errors["base"] = "invalid_auth"
+            except EPBApiError:
+                errors["base"] = "cannot_connect"
             except Exception:  # pylint: disable=broad-except
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
             else:
-                return self.async_create_entry(title=info["title"], data=user_input)
+                await self.async_set_unique_id(user_input[CONF_USERNAME])
+                self._abort_if_unique_id_configured()
+                return self.async_create_entry(
+                    title=user_input[CONF_USERNAME],
+                    data=user_input,
+                )
 
         return self.async_show_form(
             step_id="user",

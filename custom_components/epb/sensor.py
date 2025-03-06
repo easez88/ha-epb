@@ -4,12 +4,21 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+import voluptuous as vol
+
 from homeassistant.components.sensor import (
+    PLATFORM_SCHEMA,
     SensorDeviceClass,
     SensorEntity,
     SensorStateClass,
 )
-from homeassistant.const import UnitOfEnergy, CURRENCY_DOLLAR
+from homeassistant.const import (
+    CONF_PASSWORD,
+    CONF_USERNAME,
+    UnitOfEnergy,
+    CURRENCY_DOLLAR,
+)
+import homeassistant.helpers.config_validation as cv
 from homeassistant.core import callback
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -19,22 +28,38 @@ from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
+PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
+    {
+        vol.Required(CONF_USERNAME): cv.string,
+        vol.Required(CONF_PASSWORD): cv.string,
+    }
+)
+
 class EPBBaseSensor(CoordinatorEntity, SensorEntity):
     """Base class for EPB sensors."""
 
     def __init__(
-        self, 
+        self,
         coordinator: EPBUpdateCoordinator,
         account_id: str,
-        address: str,
+        gis_id: str | None,
     ) -> None:
-        """Initialize the base sensor."""
+        """Initialize the sensor.
+        
+        Args:
+            coordinator: The EPB update coordinator
+            account_id: The EPB account ID
+            gis_id: The GIS ID for the account (optional)
+        """
         super().__init__(coordinator)
         self._account_id = account_id
+        self._gis_id = gis_id
+        self._attr_has_entity_name = True
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, account_id)},
-            name=f"EPB - {address}",
-            manufacturer="Electric Power Board",
+            name=f"EPB Account {account_id}",
+            manufacturer="EPB",
+            model="Power Account",
         )
 
     @property
@@ -47,36 +72,34 @@ class EPBBaseSensor(CoordinatorEntity, SensorEntity):
         )
 
 class EPBEnergySensor(EPBBaseSensor):
-    """Representation of an EPB Energy sensor."""
+    """Sensor for EPB energy usage."""
 
     _attr_device_class = SensorDeviceClass.ENERGY
+    _attr_state_class = SensorStateClass.TOTAL
     _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
-    _attr_state_class = SensorStateClass.TOTAL_INCREASING
+    _attr_icon = "mdi:flash"
 
     def __init__(
         self,
         coordinator: EPBUpdateCoordinator,
         account_id: str,
-        address: str,
+        gis_id: str | None,
     ) -> None:
         """Initialize the energy sensor."""
-        super().__init__(coordinator, account_id, address)
-        self._attr_unique_id = f"epb_energy_{account_id}"
-        self._attr_name = f"EPB Energy - {address}"
+        super().__init__(coordinator, account_id, gis_id)
+        self._attr_unique_id = f"{DOMAIN}_{account_id}_energy"
+
+    @property
+    def name(self) -> str:
+        """Return the name of the sensor."""
+        return "Energy Usage"
 
     @property
     def native_value(self) -> float | None:
         """Return the state of the sensor."""
-        try:
-            return self.coordinator.data[self._account_id]["kwh"]
-        except (KeyError, TypeError):
-            _LOGGER.warning(
-                "Unable to get data for account %s. Coordinator data: %s",
-                self._account_id,
-                self.coordinator.data
-            )
+        if self.coordinator.data is None:
             return None
-        return float(self.coordinator.data[self._account_id]["kwh"])
+        return self.coordinator.data.get(self._account_id, {}).get("kwh")
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -94,29 +117,34 @@ class EPBEnergySensor(EPBBaseSensor):
         }
 
 class EPBCostSensor(EPBBaseSensor):
-    """Representation of an EPB Cost sensor."""
+    """Sensor for EPB energy cost."""
 
     _attr_device_class = SensorDeviceClass.MONETARY
-    _attr_native_unit_of_measurement = CURRENCY_DOLLAR
     _attr_state_class = SensorStateClass.TOTAL
+    _attr_native_unit_of_measurement = CURRENCY_DOLLAR
+    _attr_icon = "mdi:currency-usd"
 
     def __init__(
         self,
         coordinator: EPBUpdateCoordinator,
         account_id: str,
-        address: str,
+        gis_id: str | None,
     ) -> None:
         """Initialize the cost sensor."""
-        super().__init__(coordinator, account_id, address)
-        self._attr_unique_id = f"epb_cost_{account_id}"
-        self._attr_name = f"EPB Cost - {address}"
+        super().__init__(coordinator, account_id, gis_id)
+        self._attr_unique_id = f"{DOMAIN}_{account_id}_cost"
+
+    @property
+    def name(self) -> str:
+        """Return the name of the sensor."""
+        return "Energy Cost"
 
     @property
     def native_value(self) -> float | None:
-        """Return the cost value."""
-        if not self.available:
+        """Return the state of the sensor."""
+        if self.coordinator.data is None:
             return None
-        return float(self.coordinator.data[self._account_id]["cost"])
+        return self.coordinator.data.get(self._account_id, {}).get("cost")
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up EPB sensors based on a config entry."""

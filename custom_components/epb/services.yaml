@@ -1,0 +1,7 @@
+update:
+  name: Update
+  description: Forces an immediate update of all EPB sensors.
+  target:
+    entity:
+      integration: epb
+      domain: sensor 

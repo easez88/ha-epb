@@ -1,75 +1,81 @@
-# Home Assistant EPB Integration
+# EPB Integration for Home Assistant
 
-[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-
-This is a custom component for Home Assistant that integrates with EPB (Electric Power Board) to provide energy usage and cost data. Many thanks to [@bradwick](https://github.com/bradwick) for the initial implementation in nodered.
+This integration allows you to monitor your Electric Power Board (EPB) energy usage and cost data in Home Assistant.
 
 ## Features
 
-- Real-time energy usage data from EPB
-- Daily cost tracking
+- Real-time energy usage monitoring
+- Cost tracking
 - Multiple account support
-- Automatic data updates every 15 minutes
+- Configurable update intervals
+- Automatic token refresh
 
 ## Installation
 
 ### HACS (Recommended)
 
-1. Open HACS in your Home Assistant instance
+1. Open HACS in Home Assistant
 2. Click on "Integrations"
-3. Click the three dots in the top right corner
-4. Select "Custom repositories"
-5. Add this repository URL: `https://github.com/asachs01/ha-epb`
-6. Select category: "Integration"
-7. Click "Add"
-8. Click "Install" on the EPB integration card
+3. Click the "+" button
+4. Search for "EPB"
+5. Click "Install"
+6. Restart Home Assistant
 
 ### Manual Installation
 
-1. Download the latest release
-2. Copy the `custom_components/epb` folder to your Home Assistant's `custom_components` directory
-3. Restart Home Assistant
+1. Copy the `custom_components/epb` directory to your Home Assistant's `custom_components` directory
+2. Restart Home Assistant
 
 ## Configuration
 
-1. Go to Settings > Devices & Services
+1. Go to Settings -> Devices & Services
 2. Click "Add Integration"
 3. Search for "EPB"
 4. Enter your EPB credentials:
-   - Username (your EPB web portal username)
-   - Password (your EPB web portal password)
+   - Username (email)
+   - Password
+   - Update interval (optional, defaults to 15 minutes)
 
-## Sensors
+## Entities
 
-For each EPB account, this integration creates:
+For each EPB account, the integration creates:
 
-- **EPB Energy**: Daily energy usage in kWh
-  - Device class: `energy`
-  - State class: `total_increasing`
-  - Unit: kWh
+- Energy sensor (kWh)
+  - Shows current energy usage
+  - Includes service address and account details as attributes
+- Cost sensor ($)
+  - Shows current cost
+  - Updates with real-time rate information
 
-- **EPB Cost**: Daily energy cost
-  - Device class: `monetary`
-  - State class: `total`
-  - Unit: USD
+## Options
 
-## API Details
+You can configure the following options:
+- Update interval (1-60 minutes)
 
-This integration uses the EPB web API to fetch data:
-- Authentication endpoint: `https://api.epb.com/web/api/v1/login/`
-- Account data endpoint: `https://api.epb.com/web/api/v1/account-links/`
-- Usage data endpoint: `https://api.epb.com/web/api/v1/usage/power/permanent/compare/daily`
+To change options:
+1. Go to Settings -> Devices & Services
+2. Find the EPB integration
+3. Click "Configure"
 
-Data is updated every 15 minutes by default.
+## Troubleshooting
 
-## Debugging
+### Common Issues
 
-This integration logs to Home Assistant's standard logging system. To see the logs:
+1. **Authentication Failed**
+   - Verify your EPB credentials
+   - Check if you can log in to the EPB website
 
-1. Go to Settings > System > Logs
-2. Filter for "epb"
+2. **No Data Available**
+   - The integration will show as unavailable if no data is received
+   - Check your EPB account status
 
-To enable debug logging, add the following to your `configuration.yaml`:
+3. **Token Expired**
+   - The integration automatically handles token refresh
+   - If persistent, try removing and re-adding the integration
+
+### Debug Logging
+
+To enable debug logging:
 
 ```yaml
 logger:
@@ -80,12 +86,8 @@ logger:
 
 ## Contributing
 
-Feel free to submit issues and pull requests for improvements.
+We welcome contributions! Please feel free to submit a Pull Request.
 
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Disclaimer
-
-This integration is not officially affiliated with or endorsed by EPB.
