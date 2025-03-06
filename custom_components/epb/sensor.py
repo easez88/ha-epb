@@ -120,7 +120,7 @@ class EPBCostSensor(EPBBaseSensor):
     """Sensor for EPB energy cost."""
 
     _attr_device_class = SensorDeviceClass.MONETARY
-    _attr_state_class = SensorStateClass.TOTAL
+    _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = CURRENCY_DOLLAR
     _attr_icon = "mdi:currency-usd"
 
@@ -144,7 +144,10 @@ class EPBCostSensor(EPBBaseSensor):
         """Return the state of the sensor."""
         if self.coordinator.data is None:
             return None
-        return self.coordinator.data.get(self._account_id, {}).get("cost")
+        cost = self.coordinator.data.get(self._account_id, {}).get("cost")
+        if cost is not None:
+            return abs(cost)
+        return None
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up EPB sensors based on a config entry."""

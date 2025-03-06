@@ -134,6 +134,11 @@ class EPBApiClient:
             A dictionary containing kwh and cost values
         """
         try:
+            # Constants for rate calculation
+            ENERGY_CHARGE_RATE = 0.095  # Base energy charge per kWh
+            TVA_FUEL_COST_ADJUSTMENT = 0.029  # Current TVA fuel cost adjustment
+            CUSTOMER_CHARGE = 9.81  # Fixed monthly customer charge
+            
             # First try to get data from daily format
             if "data" in data and data["data"]:
                 # Find the last entry that has actual data
@@ -146,25 +151,37 @@ class EPBApiClient:
                         break
                 
                 if latest_data:
+                    kwh = float(latest_data.get("pos_kwh", 0))
+                    # Calculate cost using EPB's rate structure
+                    total_rate = ENERGY_CHARGE_RATE + TVA_FUEL_COST_ADJUSTMENT
+                    cost = (kwh * total_rate) + CUSTOMER_CHARGE
                     return {
-                        "kwh": float(latest_data.get("pos_kwh", 0)),
-                        "cost": float(latest_data.get("pos_wh_est_cost", 0))
+                        "kwh": kwh,
+                        "cost": cost
                     }
                     
             # If that fails or no daily data found, try the monthly format
             if "interval_a_totals" in data:
                 totals = data["interval_a_totals"]
+                kwh = float(totals.get("pos_kwh", 0))
+                # Calculate cost using EPB's rate structure
+                total_rate = ENERGY_CHARGE_RATE + TVA_FUEL_COST_ADJUSTMENT
+                cost = (kwh * total_rate) + CUSTOMER_CHARGE
                 return {
-                    "kwh": float(totals.get("pos_kwh", 0)),
-                    "cost": float(totals.get("pos_wh_est_cost", 0))
+                    "kwh": kwh,
+                    "cost": cost
                 }
                 
             # If both attempts fail, try interval_a_averages
             if "interval_a_averages" in data:
                 averages = data["interval_a_averages"]
+                kwh = float(averages.get("pos_kwh", 0))
+                # Calculate cost using EPB's rate structure
+                total_rate = ENERGY_CHARGE_RATE + TVA_FUEL_COST_ADJUSTMENT
+                cost = (kwh * total_rate) + CUSTOMER_CHARGE
                 return {
-                    "kwh": float(averages.get("pos_kwh", 0)),
-                    "cost": float(averages.get("pos_wh_est_cost", 0))
+                    "kwh": kwh,
+                    "cost": cost
                 }
                 
             _LOGGER.warning("No valid data format found in response: %s", data)
