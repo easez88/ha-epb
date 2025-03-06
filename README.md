@@ -9,7 +9,6 @@
 [![BuyMeCoffee][buymecoffeebadge]][buymecoffee]
 
 <img src="logo.png" alt="EPB Company Logo" width="250" height="137">
-![EPB Logo](logo.png)
 
 Home Assistant integration for EPB (Electric Power Board) smart meter data.
 
