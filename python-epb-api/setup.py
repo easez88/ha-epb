@@ -8,6 +8,10 @@ setup(
     packages=find_packages(),
     install_requires=[
         "aiohttp>=3.8.0",
+        "attrs>=21.0.0",
+        "multidict>=4.0.0",
+        "yarl>=1.0.0",
+        "frozenlist>=1.0.0",
         "typing-extensions>=4.0.0",  # For Python 3.9 compatibility
     ],
     python_requires=">=3.9",
