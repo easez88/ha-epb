@@ -5,7 +5,7 @@
     "issue_tracker": "https://github.com/asachs01/ha-epb/issues",
     "codeowners": ["@asachs01"],
     "config_flow": true,
-    "version": "1.0.0",
+    "version": "0.1.0",
     "iot_class": "cloud_polling",
     "requirements": ["python-epb-api==0.1.0"],
     "homeassistant": "2024.1.0"

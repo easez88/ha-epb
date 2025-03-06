@@ -1,0 +1,32 @@
+---
+    name: Publish Python Package
+    
+    on:
+      release:
+        types: [published]
+    
+    jobs:
+      deploy:
+        runs-on: ubuntu-latest
+        environment: ${{ github.event.repository.default_branch }}
+        permissions:
+          id-token: write
+        steps:
+          - uses: actions/checkout@v4
+          - name: Set up Python
+            uses: actions/setup-python@v5
+            with:
+              python-version: "3.9"
+          - name: Install dependencies
+            run: |
+              cd python-epb-api
+              python -m pip install --upgrade pip
+              pip install build
+          - name: Build package
+            run: |
+              cd python-epb-api
+              python -m build
+          - name: Publish package
+            uses: pypa/gh-action-pypi-publish@release/v1
+            with:
+              packages-dir: python-epb-api/dist/
