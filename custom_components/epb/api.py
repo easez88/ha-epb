@@ -20,10 +20,9 @@ class EPBApiClient:
 
     async def authenticate(self) -> None:
         """Authenticate with EPB API."""
-        auth_url = f"{self.base_url}/web/api/v1/login/"  # Matches Node-RED flow line 39
+        auth_url = f"{self.base_url}/web/api/v1/login/"
         _LOGGER.info("Authenticating with EPB API at %s", auth_url)
         
-        # Matches Node-RED flow lines 61-66
         auth_data = {
             "username": self._username,
             "password": self._password,
@@ -40,7 +39,6 @@ class EPBApiClient:
                     raise Exception(f"Authentication failed with status {response.status}: {text}")
                 
                 json_response = await response.json()
-                # Matches Node-RED flow line 99
                 self._token = json_response.get("tokens", {}).get("access", {}).get("token")
                 
                 if not self._token:
@@ -61,11 +59,9 @@ class EPBApiClient:
         """Get account links."""
         await self._ensure_token()
 
-        # Matches Node-RED flow line 125
         url = f"{self.base_url}/web/api/v1/account-links/"
         _LOGGER.debug("Fetching account links from %s", url)
         
-        # Matches Node-RED flow lines 132-139
         headers = {
             "X-User-Token": self._token
         }
@@ -90,6 +86,49 @@ class EPBApiClient:
         except Exception as err:
             _LOGGER.error("Error fetching account links: %s", err, exc_info=True)
             raise
+
+    def _extract_usage_data(self, data: dict) -> dict:
+        """Extract usage data from API response."""
+        try:
+            # First try to get data from daily format
+            if "data" in data and data["data"]:
+                # Find the last entry that has actual data
+                daily_data = data["data"]
+                latest_data = None
+                
+                for entry in reversed(daily_data):
+                    if "a" in entry and "values" in entry["a"]:
+                        latest_data = entry["a"]["values"]
+                        break
+                
+                if latest_data:
+                    return {
+                        "kwh": latest_data.get("pos_kwh", 0),
+                        "cost": latest_data.get("pos_wh_est_cost", 0)
+                    }
+                    
+            # If that fails or no daily data found, try the monthly format
+            if "interval_a_totals" in data:
+                totals = data["interval_a_totals"]
+                return {
+                    "kwh": totals.get("pos_kwh", 0),
+                    "cost": totals.get("pos_wh_est_cost", 0)
+                }
+                
+            # If both attempts fail, try interval_a_averages
+            if "interval_a_averages" in data:
+                averages = data["interval_a_averages"]
+                return {
+                    "kwh": averages.get("pos_kwh", 0),
+                    "cost": averages.get("pos_wh_est_cost", 0)
+                }
+                
+            _LOGGER.warning("No valid data format found in response: %s", data)
+            return {}
+            
+        except (KeyError, IndexError, TypeError) as err:
+            _LOGGER.error("Error parsing usage data: %s. Data: %s", err, data)
+            return {}
 
     async def get_usage_data(self, account_id: str, gis_id: str | None) -> dict:
         """Get usage data for an account."""
@@ -144,16 +183,7 @@ class EPBApiClient:
                     return {}
                 
                 data = await response.json()
-                
-                # Process data according to Node-RED flow
-                if data.get("data"):
-                    # Get the most recent day's data
-                    latest_data = data["data"][-1]["a"]["values"]
-                    return {
-                        "kwh": latest_data.get("pos_kwh", 0),
-                        "cost": latest_data.get("pos_wh_est_cost", 0)
-                    }
-                return {}
+                return self._extract_usage_data(data)
                 
         except Exception as err:
             _LOGGER.error("Error fetching usage data: %s", err, exc_info=True)
