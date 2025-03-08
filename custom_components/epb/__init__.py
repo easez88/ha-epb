@@ -1,4 +1,7 @@
-"""The EPB integration."""
+"""The EPB integration.
+
+This integration provides support for monitoring EPB (Electric Power Board) power usage and cost.
+"""
 
 from __future__ import annotations
 
