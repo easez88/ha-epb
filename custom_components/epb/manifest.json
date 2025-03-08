@@ -1,12 +1,13 @@
 {
     "domain": "epb",
-    "name": "Electric Power Board (EPB)",
-    "documentation": "https://github.com/asachs01/ha-epb",
-    "issue_tracker": "https://github.com/asachs01/ha-epb/issues",
+    "name": "EPB (Electric Power Board)",
     "codeowners": ["@asachs01"],
     "config_flow": true,
-    "version": "0.1.0",
+    "dependencies": [],
+    "documentation": "https://github.com/asachs01/ha-epb",
     "iot_class": "cloud_polling",
-    "requirements": ["python-epb-api==0.1.0"],
-    "homeassistant": "2024.1.0"
+    "issue_tracker": "https://github.com/asachs01/ha-epb/issues",
+    "requirements": [],
+    "version": "0.0.1",
+    "minimum_homeassistant_version": "2024.1.0"
 } 

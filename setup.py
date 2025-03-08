@@ -17,7 +17,7 @@ setup(
         "test": [
             "pytest>=7.0.0",
             "pytest-asyncio>=0.20.0",
-            "pytest-cov>=4.0.0",
+            "pytest-cov==4.1.0",
             "pytest-homeassistant-custom-component>=0.13.108",
             "homeassistant>=2024.1.0",
         ],

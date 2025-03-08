@@ -95,7 +95,8 @@ class EPBApiClient:
         """Get account links from the EPB API.
 
         Returns:
-            A list of account link dictionaries containing account and premise information
+            A list of account link dictionaries containing account and premise
+            information
 
         Raises:
             EPBAuthError: If authentication fails
