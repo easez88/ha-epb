@@ -79,9 +79,7 @@ class EPBApiClient:
                 _LOGGER.info("Successfully authenticated with EPB API")
 
         except ClientError as err:
-            raise EPBApiError(
-                "Connection error during authentication: {err}"
-            ) from err
+            raise EPBApiError("Connection error during authentication: {err}") from err
         except Exception as err:
             raise EPBApiError(f"Unexpected error during authentication: {err}") from err
 
@@ -247,9 +245,7 @@ class EPBApiClient:
                     return await self.get_usage_data(account_id, gis_id)
 
                 if response.status != 200:
-                    raise EPBApiError(
-                        f"Failed to get usage data: {text}"
-                    )
+                    raise EPBApiError(f"Failed to get usage data: {text}")
 
                 data = await response.json()
                 return self._extract_usage_data(data)
