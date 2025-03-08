@@ -261,6 +261,8 @@ class EPBApiClient:
             raise EPBApiError(f"Connection error fetching usage data: {err}") from err
         except Exception as err:
             _LOGGER.error(
-                "Error getting usage data for account %s: %s", account_id, err
+                "Error getting usage data for account %s: %s",
+                account_id,
+                err,
             )
             return {"kwh": 0.0, "cost": 0.0} 

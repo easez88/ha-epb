@@ -19,7 +19,6 @@ from homeassistant.const import (
     CURRENCY_DOLLAR,
 )
 import homeassistant.helpers.config_validation as cv
-from homeassistant.core import callback
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
