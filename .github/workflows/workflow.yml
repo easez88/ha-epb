@@ -6,27 +6,43 @@
         types: [published]
     
     jobs:
-      deploy:
+      build:
+        name: Build distribution
         runs-on: ubuntu-latest
-        environment: ${{ github.event.repository.default_branch }}
-        permissions:
-          id-token: write
         steps:
           - uses: actions/checkout@v4
           - name: Set up Python
             uses: actions/setup-python@v5
             with:
               python-version: "3.9"
-          - name: Install dependencies
+          - name: Install build
             run: |
-              cd python-epb-api
               python -m pip install --upgrade pip
               pip install build
           - name: Build package
             run: |
               cd python-epb-api
               python -m build
-          - name: Publish package
-            uses: pypa/gh-action-pypi-publish@release/v1
+          - name: Store distribution packages
+            uses: actions/upload-artifact@v4
             with:
-              packages-dir: python-epb-api/dist/
+              name: python-package-distributions
+              path: python-epb-api/dist/
+
+      pypi-publish:
+        needs: build
+        name: Upload release to PyPI
+        runs-on: ubuntu-latest
+        environment:
+          name: ${{ github.event.repository.name }}
+          url: https://pypi.org/project/python-epb-api/
+        permissions:
+          id-token: write
+        steps:
+          - name: Download dists
+            uses: actions/download-artifact@v4
+            with:
+              name: python-package-distributions
+              path: dist/
+          - name: Publish package distributions to PyPI
+            uses: pypa/gh-action-pypi-publish@release/v1
