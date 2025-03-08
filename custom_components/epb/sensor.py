@@ -6,6 +6,7 @@ from typing import Any
 
 import voluptuous as vol
 
+from homeassistant.const import UnitOfEnergy
 from homeassistant.components.sensor import (
     PLATFORM_SCHEMA,
     SensorDeviceClass,
@@ -15,7 +16,6 @@ from homeassistant.components.sensor import (
 from homeassistant.const import (
     CONF_PASSWORD,
     CONF_USERNAME,
-    UnitOfEnergy,
     CURRENCY_DOLLAR,
 )
 import homeassistant.helpers.config_validation as cv
