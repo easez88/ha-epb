@@ -78,7 +78,7 @@
           
           - name: Run tests
             run: |
-              pytest --asyncio-mode=strict --asyncio-default-fixture-loop-scope=function --cov=custom_components.epb tests/
+              pytest --cov=custom_components.epb tests/
           
           - name: Upload coverage to Codecov
             uses: codecov/codecov-action@v4
