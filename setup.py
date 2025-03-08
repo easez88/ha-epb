@@ -13,11 +13,14 @@ setup(
     install_requires=[
         "aiohttp>=3.8.0",
     ],
-    tests_require=[
-        "pytest>=7.0.0",
-        "pytest-asyncio>=0.20.0",
-        "pytest-cov>=4.0.0",
-        "homeassistant>=2024.1.0",
-    ],
+    extras_require={
+        "test": [
+            "pytest>=7.0.0",
+            "pytest-asyncio>=0.20.0",
+            "pytest-cov>=4.0.0",
+            "pytest-homeassistant-custom-component>=0.13.108",
+            "homeassistant>=2024.1.0",
+        ],
+    },
     python_requires=">=3.11.0",
 )
