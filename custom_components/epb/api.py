@@ -69,7 +69,9 @@ class EPBApiClient:
                     )
 
                 json_response = await response.json()
-                self._token = json_response.get("tokens", {}).get("access", {}).get("token")
+                self._token = (
+                    json_response.get("tokens", {}).get("access", {}).get("token")
+                )
 
                 if not self._token:
                     raise EPBAuthError("No token in authentication response")
@@ -122,7 +124,9 @@ class EPBApiClient:
                 return await response.json()
 
         except ClientError as err:
-            raise EPBApiError(f"Connection error fetching account links: {err}") from err
+            raise EPBApiError(
+                f"Connection error fetching account links: {err}"
+            ) from err
         except Exception as err:
             raise EPBApiError(f"Error fetching account links: {err}") from err
 
@@ -225,7 +229,9 @@ class EPBApiClient:
         headers = {"X-User-Token": self._token}
 
         try:
-            async with self._session.post(url, json=payload, headers=headers) as response:
+            async with self._session.post(
+                url, json=payload, headers=headers
+            ) as response:
                 _LOGGER.debug("Usage data response status: %s", response.status)
                 text = await response.text()
                 _LOGGER.debug("Usage data response: %s", text)

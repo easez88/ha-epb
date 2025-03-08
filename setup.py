@@ -1,4 +1,5 @@
 """Setup for EPB integration."""
+
 from setuptools import find_namespace_packages, setup
 
 setup(
@@ -8,9 +9,7 @@ setup(
     author="Aaron Sachs",
     author_email="aaronm.sachs@gmail.com",
     packages=find_namespace_packages(include=["custom_components.*"]),
-    package_data={
-        "custom_components.epb": ["manifest.json", "translations/*.json"]
-    },
+    package_data={"custom_components.epb": ["manifest.json", "translations/*.json"]},
     install_requires=[
         "aiohttp>=3.8.0",
     ],
