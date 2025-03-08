@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 setup(
     name="ha-epb",
@@ -10,4 +10,4 @@ setup(
     install_requires=[
         "aiohttp>=3.8.0",
     ],
-) 
+)

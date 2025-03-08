@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 # Read README.md for the long description
 with open("README.md", "r", encoding="utf-8") as fh:
@@ -36,4 +36,4 @@ setup(
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
     keywords="epb energy utility api client homeassistant",
-) 
+)

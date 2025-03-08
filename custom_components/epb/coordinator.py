@@ -1,22 +1,21 @@
 """Data update coordinator for EPB integration."""
+
 from __future__ import annotations
 
 import logging
 from datetime import timedelta
 from typing import Any
 
+from epb_api import EPBApiClient, EPBApiError, EPBAuthError
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.update_coordinator import (
-    DataUpdateCoordinator,
-    UpdateFailed,
-)
 from homeassistant.exceptions import ConfigEntryAuthFailed
-
-from epb_api import EPBApiClient, EPBAuthError, EPBApiError
+from homeassistant.helpers.update_coordinator import (DataUpdateCoordinator,
+                                                      UpdateFailed)
 
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
+
 
 class EPBUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Class to manage fetching EPB data."""
@@ -47,14 +46,16 @@ class EPBUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             for account in self.accounts:
                 account_id = account["power_account"]["account_id"]
                 gis_id = account["premise"].get("gis_id")
-                
+
                 try:
                     usage_data = await self.client.get_usage_data(account_id, gis_id)
                     data[account_id] = {
                         "kwh": usage_data["kwh"],
                         "cost": usage_data["cost"],
                         "has_usage_data": True,
-                        "service_address": account["premise"].get("full_service_address"),
+                        "service_address": account["premise"].get(
+                            "full_service_address"
+                        ),
                         "city": account["premise"].get("city"),
                         "state": account["premise"].get("state"),
                         "zip_code": account["premise"].get("zip_code"),
@@ -74,4 +75,4 @@ class EPBUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         except EPBApiError as err:
             raise UpdateFailed(f"Error communicating with EPB API: {err}") from err
         except Exception as err:
-            raise UpdateFailed(f"Unexpected error: {err}") from err 
+            raise UpdateFailed(f"Unexpected error: {err}") from err

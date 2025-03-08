@@ -1,22 +1,23 @@
 """Config flow for EPB integration."""
+
 from __future__ import annotations
 
 import logging
-from typing import Any
 from datetime import timedelta
+from typing import Any
 
 import voluptuous as vol
+from epb_api import EPBApiClient, EPBApiError, EPBAuthError
 from homeassistant import config_entries
-from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, CONF_SCAN_INTERVAL
+from homeassistant.const import (CONF_PASSWORD, CONF_SCAN_INTERVAL,
+                                 CONF_USERNAME)
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import selector
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from epb_api import EPBApiClient, EPBAuthError, EPBApiError
-
-from .const import DOMAIN, DEFAULT_SCAN_INTERVAL
+from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -39,13 +40,12 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
     }
 )
 
+
 async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
     """Validate the user input allows us to connect."""
     session = async_get_clientsession(hass)
     client = EPBApiClient(
-        username=data[CONF_USERNAME],
-        password=data[CONF_PASSWORD],
-        session=session
+        username=data[CONF_USERNAME], password=data[CONF_PASSWORD], session=session
     )
 
     try:
@@ -66,6 +66,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
 
     # Return info to be stored in the config entry
     return {"title": f"EPB ({data[CONF_USERNAME]})"}
+
 
 class EPBConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for EPB."""
@@ -115,6 +116,7 @@ class EPBConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
+
 class EPBOptionsFlow(config_entries.OptionsFlow):
     """Handle options."""
 
@@ -143,8 +145,7 @@ class EPBOptionsFlow(config_entries.OptionsFlow):
         options_schema = vol.Schema(
             {
                 vol.Optional(
-                    CONF_SCAN_INTERVAL,
-                    default=int(interval_minutes)
+                    CONF_SCAN_INTERVAL, default=int(interval_minutes)
                 ): selector.NumberSelector(
                     selector.NumberSelectorConfig(
                         min=1,
@@ -162,5 +163,6 @@ class EPBOptionsFlow(config_entries.OptionsFlow):
             data_schema=options_schema,
         )
 
+
 class InvalidAuth(HomeAssistantError):
-    """Error to indicate there is invalid auth.""" 
+    """Error to indicate there is invalid auth."""

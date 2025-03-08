@@ -1,15 +1,16 @@
 """The EPB integration."""
+
 from __future__ import annotations
 
 import logging
 from datetime import timedelta
 
+from epb_api import EPBApiClient
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, CONF_SCAN_INTERVAL, Platform
+from homeassistant.const import (CONF_PASSWORD, CONF_SCAN_INTERVAL,
+                                 CONF_USERNAME, Platform)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-
-from epb_api import EPBApiClient
 
 from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
 from .coordinator import EPBUpdateCoordinator
@@ -17,6 +18,7 @@ from .coordinator import EPBUpdateCoordinator
 PLATFORMS: list[Platform] = [Platform.SENSOR]
 
 _LOGGER = logging.getLogger(__name__)
+
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up EPB from a config entry."""
@@ -47,6 +49,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     return True
 
+
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
@@ -54,6 +57,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     return unload_ok
 
+
 async def update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Update listener."""
-    await hass.config_entries.async_reload(entry.entry_id) 
+    await hass.config_entries.async_reload(entry.entry_id)

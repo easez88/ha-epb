@@ -1,29 +1,22 @@
 """Sensor platform for EPB integration."""
+
 from __future__ import annotations
 
 import logging
 from typing import Any
 
-import voluptuous as vol
-
-from homeassistant.const import UnitOfEnergy
-from homeassistant.components.sensor import (
-    PLATFORM_SCHEMA,
-    SensorDeviceClass,
-    SensorEntity,
-    SensorStateClass,
-)
-from homeassistant.const import (
-    CONF_PASSWORD,
-    CONF_USERNAME,
-    CURRENCY_DOLLAR,
-)
 import homeassistant.helpers.config_validation as cv
+import voluptuous as vol
+from homeassistant.components.sensor import (PLATFORM_SCHEMA,
+                                             SensorDeviceClass, SensorEntity,
+                                             SensorStateClass)
+from homeassistant.const import (CONF_PASSWORD, CONF_USERNAME, CURRENCY_DOLLAR,
+                                 UnitOfEnergy)
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .coordinator import EPBUpdateCoordinator
 from .const import DOMAIN
+from .coordinator import EPBUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -33,6 +26,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Required(CONF_PASSWORD): cv.string,
     }
 )
+
 
 class EPBBaseSensor(CoordinatorEntity, SensorEntity):
     """Base class for EPB sensors."""
@@ -44,7 +38,7 @@ class EPBBaseSensor(CoordinatorEntity, SensorEntity):
         gis_id: str | None,
     ) -> None:
         """Initialize the sensor.
-        
+
         Args:
             coordinator: The EPB update coordinator
             account_id: The EPB account ID
@@ -65,10 +59,11 @@ class EPBBaseSensor(CoordinatorEntity, SensorEntity):
     def available(self) -> bool:
         """Return if entity is available."""
         return (
-            self.coordinator.last_update_success and
-            self._account_id in self.coordinator.data and
-            self.coordinator.data[self._account_id].get("has_usage_data", False)
+            self.coordinator.last_update_success
+            and self._account_id in self.coordinator.data
+            and self.coordinator.data[self._account_id].get("has_usage_data", False)
         )
+
 
 class EPBEnergySensor(EPBBaseSensor):
     """Sensor for EPB energy usage."""
@@ -105,7 +100,7 @@ class EPBEnergySensor(EPBBaseSensor):
         """Return additional state attributes."""
         if not self.coordinator.data or self._account_id not in self.coordinator.data:
             return {}
-        
+
         data = self.coordinator.data[self._account_id]
         return {
             "account_number": self._account_id,
@@ -114,6 +109,7 @@ class EPBEnergySensor(EPBBaseSensor):
             "state": data.get("state"),
             "zip_code": data.get("zip_code"),
         }
+
 
 class EPBCostSensor(EPBBaseSensor):
     """Sensor for EPB energy cost."""
@@ -148,6 +144,7 @@ class EPBCostSensor(EPBBaseSensor):
             return abs(cost)
         return None
 
+
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up EPB sensors based on a config entry."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
@@ -160,19 +157,21 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
     for account in coordinator.accounts:
         account_id = account["power_account"]["account_id"]
-        
+
         # Skip if we've already processed this account
         if account_id in seen_accounts:
             continue
-            
+
         seen_accounts.add(account_id)
-        
+
         # Get the address from the premise data
         address = account["premise"].get("full_service_address", account_id)
-        
-        entities.extend([
-            EPBEnergySensor(coordinator, account_id, address),
-            EPBCostSensor(coordinator, account_id, address),
-        ])
 
-    async_add_entities(entities) 
+        entities.extend(
+            [
+                EPBEnergySensor(coordinator, account_id, address),
+                EPBCostSensor(coordinator, account_id, address),
+            ]
+        )
+
+    async_add_entities(entities)
