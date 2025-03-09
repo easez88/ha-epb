@@ -14,12 +14,14 @@ _LOGGER = logging.getLogger(__name__)
 
 class PowerAccount(TypedDict):
     """Type for power account data."""
+
     account_id: str
     gis_id: Optional[str]
 
 
 class AccountLink(TypedDict):
     """Type for account link data."""
+
     power_account: PowerAccount
 
 
