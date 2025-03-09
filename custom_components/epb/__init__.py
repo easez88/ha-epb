@@ -51,7 +51,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Forward the setup to the sensor platform
     try:
-        setup_ok = await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+        setup_ok = await hass.config_entries.async_forward_entry_setups(
+            entry, PLATFORMS
+        )
         if not cast(bool, setup_ok):
             return False
     except Exception:
