@@ -26,13 +26,13 @@ from aiohttp import ClientSession
 async def main():
     async with ClientSession() as session:
         client = EPBApiClient("your_username", "your_password", session)
-        
+
         # Authenticate
         await client.authenticate()
-        
+
         # Get account links
         accounts = await client.get_account_links()
-        
+
         # Get usage data for each account
         for account in accounts:
             account_id = account["power_account"]["account_id"]
@@ -63,4 +63,4 @@ The client provides two main exception classes:
 
 ## License
 
-MIT License 
+MIT License

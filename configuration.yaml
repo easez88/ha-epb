@@ -5,4 +5,4 @@ logger:
     custom_components.epb.api: debug
     custom_components.epb.coordinator: debug
     custom_components.epb.sensor: debug
-    aiohttp.client: debug  # This will show us the actual HTTP requests 
+    aiohttp.client: debug  # This will show us the actual HTTP requests

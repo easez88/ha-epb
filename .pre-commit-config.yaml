@@ -1,0 +1,48 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: debug-statements
+
+  - repo: https://github.com/psf/black
+    rev: 24.2.0
+    hooks:
+      - id: black
+        args: [--safe, --quiet]
+        files: ^((custom_components|tests)/.+)?[^/]+\.py$
+
+  - repo: https://github.com/PyCQA/flake8
+    rev: 7.0.0
+    hooks:
+      - id: flake8
+        additional_dependencies:
+          - flake8-docstrings
+        files: ^(custom_components|tests)/.+\.py$
+
+  # Temporarily disabled due to issues with Home Assistant's typing
+  # - repo: https://github.com/pre-commit/mirrors-mypy
+  #   rev: v1.8.0
+  #   hooks:
+  #     - id: mypy
+  #       name: mypy
+  #       files: ^(custom_components|tests)/.+\.py$
+  #       additional_dependencies:
+  #         - types-setuptools
+  #         - pytest-homeassistant-custom-component
+  #       args: ["--config-file", "setup.cfg"]
+
+  # Temporarily making pytest optional until tests are fixed
+  - repo: local
+    hooks:
+      - id: pytest
+        name: pytest
+        entry: python -m pytest
+        language: system
+        pass_filenames: false
+        always_run: true
+        args: ["--cov=custom_components", "--cov-report=term-missing"]
+        stages: [manual]

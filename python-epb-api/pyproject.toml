@@ -30,4 +30,4 @@ Repository = "https://github.com/asachs01/python-epb-api.git"
 Issues = "https://github.com/asachs01/python-epb-api/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["epb_api"] 
+packages = ["epb_api"]

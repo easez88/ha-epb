@@ -4,4 +4,4 @@ update:
   target:
     entity:
       integration: epb
-      domain: sensor 
+      domain: sensor
