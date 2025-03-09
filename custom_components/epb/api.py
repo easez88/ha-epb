@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional, TypedDict, cast
+from typing import Any, Dict, Optional, TypedDict
 
 from aiohttp import ClientError, ClientSession
-from aiohttp.typedefs import StrOrURL
 from multidict import CIMultiDict
 
 _LOGGER = logging.getLogger(__name__)
@@ -15,14 +14,12 @@ _LOGGER = logging.getLogger(__name__)
 
 class PowerAccount(TypedDict):
     """Type for power account data."""
-
     account_id: str
     gis_id: Optional[str]
 
 
 class AccountLink(TypedDict):
     """Type for account link data."""
-
     power_account: PowerAccount
 
 
