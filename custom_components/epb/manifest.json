@@ -3,11 +3,7 @@
     "name": "EPB (Electric Power Board)",
     "codeowners": ["@asachs01"],
     "config_flow": true,
-    "dependencies": [],
     "documentation": "https://github.com/asachs01/ha-epb",
-    "homeassistant": {
-        "min_version": "2024.1.0"
-    },
     "iot_class": "cloud_polling",
     "issue_tracker": "https://github.com/asachs01/ha-epb/issues",
     "requirements": [],
