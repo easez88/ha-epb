@@ -1,25 +1,26 @@
 """Test the EPB API client."""
 
 from datetime import datetime
+from typing import AsyncGenerator, Any
 from unittest.mock import AsyncMock, Mock, patch
 
 import aiohttp
 import pytest
 from aiohttp import ClientError, ClientSession
 
-from custom_components.epb.api import EPBApiClient, EPBApiError, EPBAuthError
+from custom_components.epb.api import EPBApiClient, EPBApiError, EPBAuthError, AccountLink
 
 pytestmark = pytest.mark.asyncio
 
 
 @pytest.fixture
-def mock_session():
+async def mock_session() -> AsyncMock:
     """Create a mock aiohttp session."""
     session = AsyncMock(spec=ClientSession)
     return session
 
 
-async def test_authentication_success(mock_session):
+async def test_authentication_success(mock_session: AsyncMock) -> None:
     """Test successful authentication."""
     mock_response = AsyncMock()
     mock_response.status = 200
@@ -35,7 +36,7 @@ async def test_authentication_success(mock_session):
     mock_session.post.assert_called_once()
 
 
-async def test_authentication_failure(mock_session):
+async def test_authentication_failure(mock_session: AsyncMock) -> None:
     """Test failed authentication."""
     mock_response = AsyncMock()
     mock_response.status = 401
@@ -49,11 +50,11 @@ async def test_authentication_failure(mock_session):
         await client.authenticate()
 
 
-async def test_get_account_links_success(mock_session):
+async def test_get_account_links_success(mock_session: AsyncMock) -> None:
     """Test successful account links retrieval."""
     mock_response = AsyncMock()
     mock_response.status = 200
-    mock_response.json.return_value = [{"power_account": {"account_id": "123"}}]
+    mock_response.json.return_value = [{"power_account": {"account_id": "123", "gis_id": None}}]
 
     mock_session.get.return_value.__aenter__.return_value = mock_response
 
@@ -62,11 +63,11 @@ async def test_get_account_links_success(mock_session):
 
     result = await client.get_account_links()
 
-    assert result == [{"power_account": {"account_id": "123"}}]
+    assert result == [{"power_account": {"account_id": "123", "gis_id": None}}]
     mock_session.get.assert_called_once()
 
 
-async def test_get_usage_data_success(mock_session):
+async def test_get_usage_data_success(mock_session: AsyncMock) -> None:
     """Test successful usage data retrieval."""
     mock_response = AsyncMock()
     mock_response.status = 200
@@ -85,7 +86,7 @@ async def test_get_usage_data_success(mock_session):
     mock_session.post.assert_called_once()
 
 
-async def test_token_refresh_on_expired(mock_session):
+async def test_token_refresh_on_expired(mock_session: AsyncMock) -> None:
     """Test token refresh when expired."""
     # First call returns token expired
     expired_response = AsyncMock()
@@ -95,7 +96,7 @@ async def test_token_refresh_on_expired(mock_session):
     # Second call (after refresh) returns success
     success_response = AsyncMock()
     success_response.status = 200
-    success_response.json.return_value = [{"power_account": {"account_id": "123"}}]
+    success_response.json.return_value = [{"power_account": {"account_id": "123", "gis_id": None}}]
 
     # Auth response for token refresh
     auth_response = AsyncMock()
@@ -114,7 +115,7 @@ async def test_token_refresh_on_expired(mock_session):
 
     result = await client.get_account_links()
 
-    assert result == [{"power_account": {"account_id": "123"}}]
+    assert result == [{"power_account": {"account_id": "123", "gis_id": None}}]
     assert client._token == "new-token"
     assert mock_session.get.call_count == 2
     assert mock_session.post.call_count == 1

@@ -1,14 +1,12 @@
-"""Test the EPB config flow."""
-
-from unittest.mock import patch
+"""Test the config flow."""
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from homeassistant import config_entries, data_entry_flow
-from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.epb.config_flow import ConfigFlow
+from custom_components.epb.config_flow import EPBConfigFlow, InvalidAuth, CannotConnect
 from custom_components.epb.const import DOMAIN
 
 pytestmark = pytest.mark.asyncio
@@ -16,30 +14,33 @@ pytestmark = pytest.mark.asyncio
 
 async def test_form(hass: HomeAssistant) -> None:
     """Test we get the form."""
+    flow = EPBConfigFlow()
+    flow.hass = hass
+
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
-    assert result["type"] == "form"
-    assert result["errors"] == {}
+    assert result["type"] == data_entry_flow.FlowResultType.FORM
+    assert result["errors"] is None
 
     with patch(
         "custom_components.epb.config_flow.validate_input",
-        return_value={"title": "EPB (test@example.com)"},
+        return_value=None,
     ):
         result2 = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             {
-                CONF_USERNAME: "test@example.com",
-                CONF_PASSWORD: "test-password",
+                "username": "test-username",
+                "password": "test-password",
             },
         )
         await hass.async_block_till_done()
 
-    assert result2["type"] == "create_entry"
-    assert result2["title"] == "EPB (test@example.com)"
+    assert result2["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
+    assert result2["title"] == "test-username"
     assert result2["data"] == {
-        CONF_USERNAME: "test@example.com",
-        CONF_PASSWORD: "test-password",
+        "username": "test-username",
+        "password": "test-password",
     }
 
 
@@ -56,10 +57,10 @@ async def test_form_invalid_auth(hass: HomeAssistant) -> None:
         result2 = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             {
-                CONF_USERNAME: "test@example.com",
-                CONF_PASSWORD: "test-password",
+                "username": "test-username",
+                "password": "test-password",
             },
         )
 
-    assert result2["type"] == "form"
+    assert result2["type"] == data_entry_flow.FlowResultType.FORM
     assert result2["errors"] == {"base": "invalid_auth"}

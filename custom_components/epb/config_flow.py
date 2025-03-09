@@ -8,8 +8,7 @@ from typing import Any
 
 import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.const import (CONF_PASSWORD, CONF_SCAN_INTERVAL,
-                                 CONF_USERNAME)
+from homeassistant.const import CONF_PASSWORD, CONF_SCAN_INTERVAL, CONF_USERNAME
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
@@ -57,14 +56,20 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> None:
         raise CannotConnect from err
 
 
-class EPBConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+class EPBConfigFlow(config_entries.ConfigFlow):
     """Handle a config flow for EPB."""
 
     VERSION = 1
 
+    def __init__(self) -> None:
+        """Initialize the config flow."""
+        super().__init__(domain=DOMAIN)
+
     @staticmethod
     @callback
-    def async_get_options_flow(config_entry):
+    def async_get_options_flow(
+        config_entry: config_entries.ConfigEntry,
+    ) -> EPBOptionsFlow:
         """Get the options flow for this handler."""
         return EPBOptionsFlow(config_entry)
 

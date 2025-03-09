@@ -4,11 +4,24 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast, TypedDict
 
 from aiohttp import ClientError, ClientSession
+from aiohttp.typedefs import StrOrURL
+from multidict import CIMultiDict
 
 _LOGGER = logging.getLogger(__name__)
+
+
+class PowerAccount(TypedDict):
+    """Type for power account data."""
+    account_id: str
+    gis_id: Optional[str]
+
+
+class AccountLink(TypedDict):
+    """Type for account link data."""
+    power_account: PowerAccount
 
 
 class EPBApiError(Exception):
@@ -40,6 +53,13 @@ class EPBApiClient:
         self._token: Optional[str] = None
         self.base_url = "https://api.epb.com"
         _LOGGER.debug("Initializing EPB API client for user: %s", username)
+
+    def _get_auth_headers(self) -> CIMultiDict[str]:
+        """Get headers for authenticated requests."""
+        headers = CIMultiDict()
+        if self._token:
+            headers["X-User-Token"] = self._token
+        return headers
 
     async def authenticate(self) -> None:
         """Authenticate with EPB API.
@@ -89,7 +109,7 @@ class EPBApiClient:
         if not self._token:
             await self.authenticate()
 
-    async def get_account_links(self) -> List[Dict[str, Any]]:
+    async def get_account_links(self) -> list[AccountLink]:
         """Get account links from the EPB API.
 
         Returns:
@@ -105,10 +125,8 @@ class EPBApiClient:
         url = f"{self.base_url}/web/api/v1/account-links/"
         _LOGGER.debug("Fetching account links from %s", url)
 
-        headers = {"X-User-Token": self._token}
-
         try:
-            async with self._session.get(url, headers=headers) as response:
+            async with self._session.get(url, headers=self._get_auth_headers()) as response:
                 _LOGGER.debug("Account links response status: %s", response.status)
                 text = await response.text()
                 _LOGGER.debug("Account links response: %s", text)
@@ -122,7 +140,8 @@ class EPBApiClient:
                 if response.status != 200:
                     raise EPBApiError(f"Failed to get account links: {text}")
 
-                return await response.json()
+                data = await response.json()
+                return cast(list[AccountLink], data)
 
         except ClientError as err:
             raise EPBApiError(
@@ -227,11 +246,9 @@ class EPBApiClient:
 
         _LOGGER.debug("Usage data payload: %s", payload)
 
-        headers = {"X-User-Token": self._token}
-
         try:
             async with self._session.post(
-                url, json=payload, headers=headers
+                url, json=payload, headers=self._get_auth_headers()
             ) as response:
                 _LOGGER.debug("Usage data response status: %s", response.status)
                 text = await response.text()

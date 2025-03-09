@@ -7,6 +7,7 @@ and cost.
 from __future__ import annotations
 
 import logging
+from typing import Any
 from datetime import timedelta
 
 from homeassistant.config_entries import ConfigEntry
@@ -47,7 +48,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
 
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    # Forward the setup to the sensor platform
+    setup_success = await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    
+    if not setup_success:
+        return False
 
     entry.async_on_unload(entry.add_update_listener(update_listener))
 
@@ -56,7 +61,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
-    if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
 
     return unload_ok
