@@ -11,10 +11,15 @@ from datetime import timedelta
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import (CONF_PASSWORD, CONF_SCAN_INTERVAL,
-                                 CONF_USERNAME, Platform)
+from homeassistant.const import (
+    CONF_PASSWORD,
+    CONF_SCAN_INTERVAL,
+    CONF_USERNAME,
+    Platform,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.typing import ConfigType
 
 from .api import EPBApiClient
 from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
@@ -49,11 +54,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
 
     # Forward the setup to the sensor platform
-    setup_success: bool = await hass.config_entries.async_forward_entry_setups(
-        entry, PLATFORMS
-    )
-
-    if not setup_success:
+    try:
+        if not await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS):
+            return False
+    except Exception:
+        _LOGGER.exception("Error setting up platform")
         return False
 
     entry.async_on_unload(entry.add_update_listener(update_listener))
