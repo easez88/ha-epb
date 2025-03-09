@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from datetime import timedelta
-from typing import Any
+from typing import Any, cast
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (CONF_PASSWORD, CONF_SCAN_INTERVAL,
@@ -51,7 +51,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Forward the setup to the sensor platform
     try:
-        if not await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS):
+        setup_ok = await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+        if not cast(bool, setup_ok):
             return False
     except Exception:
         _LOGGER.exception("Error setting up platform")
