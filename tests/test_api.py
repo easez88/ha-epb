@@ -8,12 +8,8 @@ import aiohttp
 import pytest
 from aiohttp import ClientError, ClientSession
 
-from custom_components.epb.api import (
-    AccountLink,
-    EPBApiClient,
-    EPBApiError,
-    EPBAuthError,
-)
+from custom_components.epb.api import (AccountLink, EPBApiClient, EPBApiError,
+                                       EPBAuthError)
 
 pytestmark = pytest.mark.asyncio
 
