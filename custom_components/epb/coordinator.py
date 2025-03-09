@@ -10,7 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import (DataUpdateCoordinator,
                                                       UpdateFailed)
 
-from .api import EPBApiClient, EPBApiError, EPBAuthError
+from .api import AccountLink, EPBApiClient, EPBApiError, EPBAuthError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ class EPBUpdateCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
             update_interval=update_interval,
         )
         self.client = client
-        self.account_links: list[dict[str, Any]] = []
+        self.account_links: list[AccountLink] = []
 
     async def _async_update_data(self) -> Dict[str, Any]:
         """Fetch data from EPB."""
@@ -42,8 +42,8 @@ class EPBUpdateCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
 
             data: Dict[str, Any] = {}
             for account in self.account_links:
-                account_id = account.get("account_number")
-                gis_id = account.get("gis_id")
+                account_id = account["power_account"]["account_id"]
+                gis_id = account["power_account"].get("gis_id")
 
                 if account_id:
                     usage_data = await self.client.get_usage_data(account_id, gis_id)

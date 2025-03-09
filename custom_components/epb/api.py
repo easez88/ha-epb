@@ -57,7 +57,7 @@ class EPBApiClient:
 
     def _get_auth_headers(self) -> CIMultiDict[str]:
         """Get headers for authenticated requests."""
-        headers = CIMultiDict()
+        headers: CIMultiDict[str] = CIMultiDict()
         if self._token:
             headers["X-User-Token"] = self._token
         return headers
