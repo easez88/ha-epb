@@ -13,7 +13,7 @@ from homeassistant.const import (CONF_PASSWORD, CONF_SCAN_INTERVAL,
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers import selector, aiohttp_client
+from homeassistant.helpers import aiohttp_client, selector
 
 from .api import EPBApiClient, EPBApiError, EPBAuthError
 from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
