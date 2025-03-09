@@ -4,20 +4,17 @@ from __future__ import annotations
 
 import logging
 from datetime import timedelta
-from typing import Any
+from typing import Any, Dict
 
-from epb_api import EPBApiClient, EPBApiError, EPBAuthError
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryAuthFailed
-from homeassistant.helpers.update_coordinator import (DataUpdateCoordinator,
-                                                      UpdateFailed)
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import DOMAIN
+from .api import EPBApiClient, EPBApiError, EPBAuthError
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class EPBUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
+class EPBUpdateCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
     """Class to manage fetching EPB data."""
 
     def __init__(
@@ -30,49 +27,30 @@ class EPBUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         super().__init__(
             hass,
             _LOGGER,
-            name=DOMAIN,
+            name="EPB",
             update_interval=update_interval,
         )
         self.client = client
-        self.accounts = []
+        self.account_links: list[dict[str, Any]] = []
 
-    async def _async_update_data(self) -> dict[str, Any]:
+    async def _async_update_data(self) -> Dict[str, Any]:
         """Fetch data from EPB."""
         try:
-            if not self.accounts:
-                self.accounts = await self.client.get_account_links()
+            if not self.account_links:
+                self.account_links = await self.client.get_account_links()
 
-            data = {}
-            for account in self.accounts:
-                account_id = account["power_account"]["account_id"]
-                gis_id = account["premise"].get("gis_id")
+            data: Dict[str, Any] = {}
+            for account in self.account_links:
+                account_id = account.get("account_number")
+                gis_id = account.get("gis_id")
 
-                try:
+                if account_id:
                     usage_data = await self.client.get_usage_data(account_id, gis_id)
-                    data[account_id] = {
-                        "kwh": usage_data["kwh"],
-                        "cost": usage_data["cost"],
-                        "has_usage_data": True,
-                        "service_address": account["premise"].get(
-                            "full_service_address"
-                        ),
-                        "city": account["premise"].get("city"),
-                        "state": account["premise"].get("state"),
-                        "zip_code": account["premise"].get("zip_code"),
-                    }
-                except EPBApiError as err:
-                    _LOGGER.error(
-                        "Error fetching usage data for account %s: %s",
-                        account_id,
-                        err,
-                    )
-                    data[account_id] = {"has_usage_data": False}
+                    data[account_id] = usage_data
 
             return data
 
         except EPBAuthError as err:
-            raise ConfigEntryAuthFailed from err
+            raise UpdateFailed(f"Authentication failed: {err}") from err
         except EPBApiError as err:
-            raise UpdateFailed(f"Error communicating with EPB API: {err}") from err
-        except Exception as err:
-            raise UpdateFailed(f"Unexpected error: {err}") from err
+            raise UpdateFailed(f"Error communicating with API: {err}") from err
