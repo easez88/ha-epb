@@ -21,7 +21,7 @@ pytestmark = pytest.mark.asyncio
 @pytest.fixture
 def mock_coordinator() -> Mock:
     """Create a mock coordinator."""
-    coordinator = Mock(spec=DataUpdateCoordinator)
+    coordinator = Mock(spec=EPBDataUpdateCoordinator)
     coordinator.data = [
         {
             "power_account": {
@@ -31,6 +31,8 @@ def mock_coordinator() -> Mock:
         }
     ]
     coordinator.last_update_success = True
+    coordinator.client = Mock()
+    coordinator.client.get_usage_data.return_value = {"kwh": 100.0, "cost": 12.34}
     return coordinator
 
 
@@ -41,6 +43,7 @@ def test_energy_sensor(mock_coordinator: Mock) -> None:
     assert sensor.unique_id == "123_energy"
     assert sensor.name == "Energy Usage"
     assert sensor.available is True
+    assert sensor.native_value == 100.0
 
     attributes = sensor.extra_state_attributes
     assert attributes["account_id"] == "123"
@@ -54,6 +57,7 @@ def test_cost_sensor(mock_coordinator: Mock) -> None:
     assert sensor.unique_id == "123_cost"
     assert sensor.name == "Energy Cost"
     assert sensor.available is True
+    assert sensor.native_value == 12.34
 
 
 def test_sensor_unavailable(mock_coordinator: Mock) -> None:
@@ -74,13 +78,14 @@ def test_sensor_unavailable(mock_coordinator: Mock) -> None:
 @pytest.fixture
 async def mock_config_entry() -> MockConfigEntry:
     """Create a mock config entry."""
-    return MockConfigEntry(
+    entry = MockConfigEntry(
         domain=DOMAIN,
         data={
             CONF_USERNAME: "test@example.com",
             CONF_PASSWORD: "test-password",
         },
     )
+    return entry
 
 
 async def test_sensors_setup(
@@ -105,9 +110,10 @@ async def test_sensors_setup(
 
         mock_coordinator = AsyncMock()
         mock_coordinator.data = mock_account_links
+        mock_coordinator.async_config_entry_first_refresh = AsyncMock()
         mock_coordinator_class.return_value = mock_coordinator
 
-        mock_config_entry.add_to_hass(hass)
+        await mock_config_entry.add_to_hass(hass)
         await hass.config_entries.async_setup(mock_config_entry.entry_id)
         await hass.async_block_till_done()
 
@@ -129,6 +135,7 @@ async def test_energy_sensor_state(
         mock_client_class.return_value = mock_client
 
         mock_coordinator = AsyncMock()
+        mock_coordinator.client = mock_client
         mock_coordinator_class.return_value = mock_coordinator
 
         sensor = EPBEnergySensor(mock_coordinator, "123", "456")
@@ -149,6 +156,7 @@ async def test_cost_sensor_state(
         mock_client_class.return_value = mock_client
 
         mock_coordinator = AsyncMock()
+        mock_coordinator.client = mock_client
         mock_coordinator_class.return_value = mock_coordinator
 
         sensor = EPBCostSensor(mock_coordinator, "123", "456")

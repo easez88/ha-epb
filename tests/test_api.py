@@ -15,9 +15,16 @@ pytestmark = pytest.mark.asyncio
 
 
 @pytest.fixture
-async def mock_session() -> AsyncMock:
+def mock_session() -> AsyncMock:
     """Create a mock aiohttp session."""
     session = AsyncMock(spec=ClientSession)
+    # Create a new AsyncMock for the context manager
+    mock_context = AsyncMock()
+    # Configure the context manager's enter and exit
+    session.get.return_value.__aenter__ = mock_context.__aenter__
+    session.get.return_value.__aexit__ = mock_context.__aexit__
+    session.post.return_value.__aenter__ = mock_context.__aenter__
+    session.post.return_value.__aexit__ = mock_context.__aexit__
     return session
 
 

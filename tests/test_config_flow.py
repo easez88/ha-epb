@@ -16,9 +16,6 @@ pytestmark = pytest.mark.asyncio
 
 async def test_form(hass: HomeAssistant) -> None:
     """Test we get the form."""
-    flow = EPBConfigFlow()
-    flow.hass = hass
-
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
