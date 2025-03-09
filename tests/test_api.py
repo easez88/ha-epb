@@ -1,14 +1,15 @@
 """Test the EPB API client."""
 
 from datetime import datetime
-from typing import AsyncGenerator, Any
+from typing import Any, AsyncGenerator
 from unittest.mock import AsyncMock, Mock, patch
 
 import aiohttp
 import pytest
 from aiohttp import ClientError, ClientSession
 
-from custom_components.epb.api import EPBApiClient, EPBApiError, EPBAuthError, AccountLink
+from custom_components.epb.api import (AccountLink, EPBApiClient, EPBApiError,
+                                       EPBAuthError)
 
 pytestmark = pytest.mark.asyncio
 
@@ -54,7 +55,9 @@ async def test_get_account_links_success(mock_session: AsyncMock) -> None:
     """Test successful account links retrieval."""
     mock_response = AsyncMock()
     mock_response.status = 200
-    mock_response.json.return_value = [{"power_account": {"account_id": "123", "gis_id": None}}]
+    mock_response.json.return_value = [
+        {"power_account": {"account_id": "123", "gis_id": None}}
+    ]
 
     mock_session.get.return_value.__aenter__.return_value = mock_response
 
@@ -96,7 +99,9 @@ async def test_token_refresh_on_expired(mock_session: AsyncMock) -> None:
     # Second call (after refresh) returns success
     success_response = AsyncMock()
     success_response.status = 200
-    success_response.json.return_value = [{"power_account": {"account_id": "123", "gis_id": None}}]
+    success_response.json.return_value = [
+        {"power_account": {"account_id": "123", "gis_id": None}}
+    ]
 
     # Auth response for token refresh
     auth_response = AsyncMock()

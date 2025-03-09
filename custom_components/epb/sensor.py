@@ -1,33 +1,24 @@
 """Support for EPB sensors."""
+
 from __future__ import annotations
 
-from datetime import timedelta
 import logging
+from datetime import timedelta
 from typing import Any, cast
 
-from homeassistant.components.sensor import (
-    SensorDeviceClass,
-    SensorEntity,
-    SensorStateClass,
-)
+from homeassistant.components.sensor import (SensorDeviceClass, SensorEntity,
+                                             SensorStateClass)
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import (
-    CONF_PASSWORD,
-    CONF_SCAN_INTERVAL,
-    CONF_USERNAME,
-    UnitOfEnergy,
-    UnitOfPower,
-)
+from homeassistant.const import (CONF_PASSWORD, CONF_SCAN_INTERVAL,
+                                 CONF_USERNAME, UnitOfEnergy, UnitOfPower)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
-from homeassistant.helpers.update_coordinator import (
-    CoordinatorEntity,
-    DataUpdateCoordinator,
-)
+from homeassistant.helpers.update_coordinator import (CoordinatorEntity,
+                                                      DataUpdateCoordinator)
 
-from .api import EPBApiClient, EPBApiError, AccountLink
+from .api import AccountLink, EPBApiClient, EPBApiError
 from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)

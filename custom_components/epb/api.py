@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional, cast, TypedDict
+from typing import Any, Dict, List, Optional, TypedDict, cast
 
 from aiohttp import ClientError, ClientSession
 from aiohttp.typedefs import StrOrURL
@@ -15,12 +15,14 @@ _LOGGER = logging.getLogger(__name__)
 
 class PowerAccount(TypedDict):
     """Type for power account data."""
+
     account_id: str
     gis_id: Optional[str]
 
 
 class AccountLink(TypedDict):
     """Type for account link data."""
+
     power_account: PowerAccount
 
 
@@ -126,7 +128,9 @@ class EPBApiClient:
         _LOGGER.debug("Fetching account links from %s", url)
 
         try:
-            async with self._session.get(url, headers=self._get_auth_headers()) as response:
+            async with self._session.get(
+                url, headers=self._get_auth_headers()
+            ) as response:
                 _LOGGER.debug("Account links response status: %s", response.status)
                 text = await response.text()
                 _LOGGER.debug("Account links response: %s", text)

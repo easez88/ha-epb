@@ -7,8 +7,8 @@ and cost.
 from __future__ import annotations
 
 import logging
-from typing import Any
 from datetime import timedelta
+from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (CONF_PASSWORD, CONF_SCAN_INTERVAL,
@@ -49,8 +49,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
 
     # Forward the setup to the sensor platform
-    setup_success = await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    
+    setup_success = await hass.config_entries.async_forward_entry_setups(
+        entry, PLATFORMS
+    )
+
     if not setup_success:
         return False
 
