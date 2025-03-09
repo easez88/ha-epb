@@ -7,8 +7,7 @@ from homeassistant import config_entries, data_entry_flow
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.epb.config_flow import (CannotConnect, EPBConfigFlow,
-                                               InvalidAuth)
+from custom_components.epb.config_flow import CannotConnect, EPBConfigFlow, InvalidAuth
 from custom_components.epb.const import DOMAIN
 
 pytestmark = pytest.mark.asyncio
