@@ -61,7 +61,7 @@
           
           - name: Type check with mypy
             run: |
-              mypy custom_components/epb
+              mypy custom_components/epb/ tests/
     
       tests:
         runs-on: ubuntu-latest

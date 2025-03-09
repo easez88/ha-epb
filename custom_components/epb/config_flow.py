@@ -7,16 +7,15 @@ from datetime import timedelta
 from typing import Any
 
 import voluptuous as vol
-from epb_api import EPBApiClient, EPBApiError, EPBAuthError
 from homeassistant import config_entries
 from homeassistant.const import (CONF_PASSWORD, CONF_SCAN_INTERVAL,
                                  CONF_USERNAME)
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers import selector
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers import selector, aiohttp_client
 
+from .api import EPBApiClient, EPBApiError, EPBAuthError
 from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -41,31 +40,21 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
 )
 
 
-async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
+async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> None:
     """Validate the user input allows us to connect."""
-    session = async_get_clientsession(hass)
+    session = aiohttp_client.async_get_clientsession(hass)
     client = EPBApiClient(
-        username=data[CONF_USERNAME], password=data[CONF_PASSWORD], session=session
+        data[CONF_USERNAME],
+        data[CONF_PASSWORD],
+        session,
     )
 
     try:
         await client.authenticate()
-    except EPBAuthError:
-        _LOGGER.error("Failed to authenticate: %s", EPBAuthError)
-        raise InvalidAuth from EPBAuthError
-    except EPBApiError:
-        _LOGGER.error("Failed to connect to EPB: %s", EPBApiError)
-        raise InvalidAuth from EPBApiError
-    except Exception as err:
-        _LOGGER.error("Unexpected exception: %s", err)
+    except EPBAuthError as err:
         raise InvalidAuth from err
-
-    # Convert scan_interval from minutes to timedelta
-    if CONF_SCAN_INTERVAL in data:
-        data[CONF_SCAN_INTERVAL] = timedelta(minutes=data[CONF_SCAN_INTERVAL])
-
-    # Return info to be stored in the config entry
-    return {"title": f"EPB ({data[CONF_USERNAME]})"}
+    except EPBApiError as err:
+        raise CannotConnect from err
 
 
 class EPBConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -83,22 +72,15 @@ class EPBConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle the initial step."""
-        errors = {}
+        errors: dict[str, str] = {}
 
         if user_input is not None:
-            session = async_get_clientsession(self.hass)
-            client = EPBApiClient(
-                user_input[CONF_USERNAME],
-                user_input[CONF_PASSWORD],
-                session,
-            )
-
             try:
-                await client.authenticate()
-            except EPBAuthError:
-                errors["base"] = "invalid_auth"
-            except EPBApiError:
+                await validate_input(self.hass, user_input)
+            except CannotConnect:
                 errors["base"] = "cannot_connect"
+            except InvalidAuth:
+                errors["base"] = "invalid_auth"
             except Exception:  # pylint: disable=broad-except
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
@@ -106,14 +88,11 @@ class EPBConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await self.async_set_unique_id(user_input[CONF_USERNAME])
                 self._abort_if_unique_id_configured()
                 return self.async_create_entry(
-                    title=user_input[CONF_USERNAME],
-                    data=user_input,
+                    title=user_input[CONF_USERNAME], data=user_input
                 )
 
         return self.async_show_form(
-            step_id="user",
-            data_schema=STEP_USER_DATA_SCHEMA,
-            errors=errors,
+            step_id="user", data_schema=STEP_USER_DATA_SCHEMA, errors=errors
         )
 
 
@@ -162,6 +141,10 @@ class EPBOptionsFlow(config_entries.OptionsFlow):
             step_id="init",
             data_schema=options_schema,
         )
+
+
+class CannotConnect(HomeAssistantError):
+    """Error to indicate we cannot connect."""
 
 
 class InvalidAuth(HomeAssistantError):
