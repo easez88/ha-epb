@@ -3,23 +3,17 @@
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-from homeassistant.const import (
-    CONF_PASSWORD,
-    CONF_USERNAME,
-    CURRENCY_DOLLAR,
-    UnitOfEnergy,
-)
+from homeassistant.const import (CONF_PASSWORD, CONF_USERNAME, CURRENCY_DOLLAR,
+                                 UnitOfEnergy)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.epb.api import AccountLink
 from custom_components.epb.const import DOMAIN
-from custom_components.epb.sensor import (
-    EPBCostSensor,
-    EPBDataUpdateCoordinator,
-    EPBEnergySensor,
-)
+from custom_components.epb.sensor import (EPBCostSensor,
+                                          EPBDataUpdateCoordinator,
+                                          EPBEnergySensor)
 
 pytestmark = pytest.mark.asyncio
 
