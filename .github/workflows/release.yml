@@ -5,6 +5,9 @@ on:
   release:
     types: [published]
 
+permissions:
+  contents: write
+  
 jobs:
   release:
     name: Prepare release
@@ -29,3 +32,4 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: custom_components/epb/epb.zip
+          token: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
