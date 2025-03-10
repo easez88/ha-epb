@@ -15,7 +15,8 @@ setup(
     author="Aaron Sachs",
     author_email="asachs01@users.noreply.github.com",
     url="https://github.com/asachs01/ha-epb",
-    packages=find_packages(exclude=["tests"]),
+    packages=["custom_components.epb"],
+    package_data={"custom_components.epb": ["manifest.json", "translations/*.json"]},
     install_requires=[
         "aiohttp>=3.8.0",
         "attrs>=21.0.0",

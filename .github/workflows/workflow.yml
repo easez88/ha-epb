@@ -21,13 +21,12 @@
               pip install build
           - name: Build package
             run: |
-              cd python-epb-api
               python -m build
           - name: Store distribution packages
             uses: actions/upload-artifact@v4
             with:
               name: python-package-distributions
-              path: python-epb-api/dist/
+              path: dist/
 
       pypi-publish:
         needs: build
@@ -35,7 +34,7 @@
         runs-on: ubuntu-latest
         environment:
           name: ${{ github.event.repository.name }}
-          url: https://pypi.org/project/python-epb-api/
+          url: https://pypi.org/project/ha-epb/
         permissions:
           id-token: write
         steps:
