@@ -1,26 +1,39 @@
 """Setup for EPB integration."""
 
-from setuptools import find_namespace_packages, setup
+from setuptools import find_packages, setup
+
+# Read README.md for the long description
+with open("README.md", "r", encoding="utf-8") as fh:
+    long_description = fh.read()
 
 setup(
     name="ha-epb",
-    version="0.0.1",
-    description="Home Assistant integration for EPB (Electric Power Board)",
+    version="1.0.1",
+    description="Home Assistant integration for EPB (Electric Power Board) energy usage data",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     author="Aaron Sachs",
-    author_email="aaronm.sachs@gmail.com",
-    packages=find_namespace_packages(include=["custom_components.*"]),
-    package_data={"custom_components.epb": ["manifest.json", "translations/*.json"]},
+    author_email="asachs01@users.noreply.github.com",
+    url="https://github.com/asachs01/ha-epb",
+    packages=find_packages(exclude=["tests"]),
     install_requires=[
         "aiohttp>=3.8.0",
+        "attrs>=21.0.0",
+        "multidict>=4.0.0",
+        "yarl>=1.0.0",
+        "frozenlist>=1.0.0",
+        "typing-extensions>=4.0.0",  # For Python 3.9 compatibility
     ],
-    extras_require={
-        "test": [
-            "pytest>=7.0.0",
-            "pytest-asyncio>=0.20.0",
-            "pytest-cov==4.1.0",
-            "pytest-homeassistant-custom-component>=0.13.108",
-            "homeassistant>=2024.1.0",
-        ],
-    },
-    python_requires=">=3.11.0",
+    python_requires=">=3.9",
+    classifiers=[
+        "Development Status :: 4 - Beta",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: MIT License",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+    ],
+    keywords=["home-assistant", "homeassistant", "epb", "energy", "utility"],
 )
