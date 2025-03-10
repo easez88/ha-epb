@@ -1,6 +1,6 @@
 """Setup for EPB integration."""
 
-from setuptools import find_packages, setup
+from setuptools import setup
 
 # Read README.md for the long description
 with open("README.md", "r", encoding="utf-8") as fh:
@@ -9,7 +9,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 setup(
     name="ha-epb",
     version="1.0.1",
-    description="Home Assistant integration for EPB (Electric Power Board) energy usage data",
+    description="Home Assistant integration for EPB (Electric Power Board)",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="Aaron Sachs",
