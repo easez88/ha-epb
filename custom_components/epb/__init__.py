@@ -27,13 +27,21 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Set up the EPB component."""
+    """Set up the EPB component from configuration.yaml."""
+    # Initialize the domain data if not already done
     hass.data.setdefault(DOMAIN, {})
+
+    # We don't support YAML configuration for this integration
+    # All configuration is done through the config flow
     return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up EPB from a config entry."""
+    # Initialize the domain data if not already done
+    hass.data.setdefault(DOMAIN, {})
+
+    # Create API client
     session = async_get_clientsession(hass)
     client = EPBApiClient(
         entry.data[CONF_USERNAME],
@@ -41,6 +49,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         session,
     )
 
+    # Set up the update coordinator
     scan_interval = entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
     if isinstance(scan_interval, int):
         scan_interval = timedelta(minutes=scan_interval)
@@ -51,9 +60,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         update_interval=scan_interval,
     )
 
+    # Perform initial data refresh
     await coordinator.async_config_entry_first_refresh()
 
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
+    # Store the coordinator
+    hass.data[DOMAIN][entry.entry_id] = coordinator
 
     # Forward the setup to the sensor platform
     try:
@@ -62,6 +73,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         _LOGGER.exception("Error setting up platform")
         return False
 
+    # Set up update listener
     entry.async_on_unload(entry.add_update_listener(update_listener))
 
     return True
@@ -69,7 +81,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
-    unload_ok = bool(await hass.config_entries.async_unload_platforms(entry, PLATFORMS))
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
 
