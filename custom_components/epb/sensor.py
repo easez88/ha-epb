@@ -3,22 +3,21 @@
 from __future__ import annotations
 
 import logging
-from datetime import timedelta
 from typing import Any
 
-from homeassistant.components.sensor import (SensorDeviceClass, SensorEntity,
-                                             SensorStateClass)
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorStateClass,
+)
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import (CONF_PASSWORD, CONF_SCAN_INTERVAL,
-                                 CONF_USERNAME, UnitOfEnergy)
+from homeassistant.const import UnitOfEnergy
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import (CoordinatorEntity,
-                                                      DataUpdateCoordinator)
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .api import AccountLink, EPBApiClient, EPBApiError
-from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
+from .const import DOMAIN
+from .coordinator import EPBUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -29,79 +28,32 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the EPB sensor."""
-    username = config_entry.data[CONF_USERNAME]
-    password = config_entry.data[CONF_PASSWORD]
-    scan_interval = config_entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
-
-    session = async_get_clientsession(hass)
-    client = EPBApiClient(username, password, session)
-
-    coordinator = EPBDataUpdateCoordinator(
-        hass,
-        client=client,
-        name=DOMAIN,
-        update_interval=scan_interval,
-    )
-
-    await coordinator.async_config_entry_first_refresh()
+    coordinator = hass.data[DOMAIN][config_entry.entry_id]
 
     entities = []
-    for account_link in coordinator.data:
-        account_id = account_link["power_account"]["account_id"]
-        gis_id = account_link["power_account"].get("gis_id")
+    for account in coordinator.account_links:
+        account_id = account["power_account"]["account_id"]
         entities.extend(
             [
-                EPBEnergySensor(coordinator, account_id, gis_id),
-                EPBCostSensor(coordinator, account_id, gis_id),
+                EPBEnergySensor(coordinator, account_id),
+                EPBCostSensor(coordinator, account_id),
             ]
         )
 
     async_add_entities(entities)
 
 
-class EPBDataUpdateCoordinator(DataUpdateCoordinator[list[AccountLink]]):
-    """Class to manage fetching EPB data."""
-
-    def __init__(
-        self,
-        hass: HomeAssistant,
-        client: EPBApiClient,
-        name: str,
-        update_interval: timedelta,
-    ) -> None:
-        """Initialize the coordinator."""
-        super().__init__(
-            hass,
-            _LOGGER,
-            name=name,
-            update_interval=update_interval,
-        )
-        self.client = client
-        self.account_links: list[AccountLink] = []
-
-    async def _async_update_data(self) -> list[AccountLink]:
-        """Fetch data from EPB."""
-        try:
-            self.account_links = await self.client.get_account_links()
-            return self.account_links
-        except EPBApiError as err:
-            _LOGGER.error("Error communicating with EPB API: %s", err)
-            return []
-
-
-class EPBSensorBase(CoordinatorEntity[EPBDataUpdateCoordinator], SensorEntity):
+class EPBSensorBase(CoordinatorEntity[EPBUpdateCoordinator], SensorEntity):
     """Base class for EPB sensors."""
 
     def __init__(
         self,
-        coordinator: EPBDataUpdateCoordinator,
+        coordinator: EPBUpdateCoordinator,
         account_id: str,
-        gis_id: str | None,
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)
         self.account_id = account_id
-        self.gis_id = gis_id
         self._attr_has_entity_name = True
 
     @property
@@ -109,12 +61,7 @@ class EPBSensorBase(CoordinatorEntity[EPBDataUpdateCoordinator], SensorEntity):
         """Return the state attributes."""
         return {
             "account_id": self.account_id,
-            "gis_id": self.gis_id,
         }
-
-    async def async_update(self) -> None:
-        """Update the entity."""
-        await self.coordinator.async_request_refresh()
 
 
 class EPBEnergySensor(EPBSensorBase):
@@ -126,26 +73,24 @@ class EPBEnergySensor(EPBSensorBase):
 
     def __init__(
         self,
-        coordinator: EPBDataUpdateCoordinator,
+        coordinator: EPBUpdateCoordinator,
         account_id: str,
-        gis_id: str | None,
     ) -> None:
         """Initialize the sensor."""
-        super().__init__(coordinator, account_id, gis_id)
-        self._attr_unique_id = f"{account_id}_energy"
-        self._attr_name = "Energy Usage"
-        self._value: float | None = None
+        super().__init__(coordinator, account_id)
+        # Use the correct naming convention for the unique_id
+        self._attr_unique_id = f"epb_energy_{account_id}"
+        # Set the entity_id to match the expected pattern
+        self.entity_id = f"sensor.epb_energy_{account_id}"
+        self._attr_name = f"EPB Energy {account_id}"
 
     @property
     def native_value(self) -> float | None:
         """Return the state of the sensor."""
-        # For tests that set coordinator.data to an empty list
-        if hasattr(self.coordinator, "data") and not self.coordinator.data:
+        if not self.coordinator.data or self.account_id not in self.coordinator.data:
             return None
 
-        # For testing purposes, return a default value if no data is available
-        # This is a workaround for the tests that don't properly mock the async behavior
-        return 100.0
+        return self.coordinator.data[self.account_id].get("kwh")
 
 
 class EPBCostSensor(EPBSensorBase):
@@ -157,27 +102,21 @@ class EPBCostSensor(EPBSensorBase):
 
     def __init__(
         self,
-        coordinator: EPBDataUpdateCoordinator,
+        coordinator: EPBUpdateCoordinator,
         account_id: str,
-        gis_id: str | None,
     ) -> None:
         """Initialize the sensor."""
-        super().__init__(coordinator, account_id, gis_id)
-        self._attr_unique_id = f"{account_id}_cost"
-        self._attr_name = "Energy Cost"
-        self._value: float | None = None
+        super().__init__(coordinator, account_id)
+        # Use the correct naming convention for the unique_id
+        self._attr_unique_id = f"epb_cost_{account_id}"
+        # Set the entity_id to match the expected pattern
+        self.entity_id = f"sensor.epb_cost_{account_id}"
+        self._attr_name = f"EPB Cost {account_id}"
 
     @property
     def native_value(self) -> float | None:
         """Return the state of the sensor."""
-        # For tests that set coordinator.data to an empty list
-        if hasattr(self.coordinator, "data") and not self.coordinator.data:
+        if not self.coordinator.data or self.account_id not in self.coordinator.data:
             return None
 
-        # For testing purposes, return a default value if no data is available
-        # This is a workaround for the tests that don't properly mock the async behavior
-        return 12.34
-
-    async def async_update(self) -> None:
-        """Update the entity."""
-        await self.coordinator.async_request_refresh()
+        return self.coordinator.data[self.account_id].get("cost")
