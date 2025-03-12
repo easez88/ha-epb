@@ -3,12 +3,8 @@
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-from homeassistant.const import (
-    CONF_PASSWORD,
-    CONF_USERNAME,
-    CURRENCY_DOLLAR,
-    UnitOfEnergy,
-)
+from homeassistant.const import (CONF_PASSWORD, CONF_USERNAME, CURRENCY_DOLLAR,
+                                 UnitOfEnergy)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from pytest_homeassistant_custom_component.common import MockConfigEntry
