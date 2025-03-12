@@ -73,6 +73,10 @@ This is an active open-source project. Feel free to contribute by:
 
 This project is licensed under MIT License - see the [LICENSE](LICENSE) file for details.
 
+## Acknowledgements
+
+A HUGE thank you to [bradwick](https://github.com/bradwick) for the inspiration for the project and for his Nodered flow that kicked this off.
+
 ---
 
 [releases-shield]: https://img.shields.io/github/release/asachs01/ha-epb.svg?style=for-the-badge
