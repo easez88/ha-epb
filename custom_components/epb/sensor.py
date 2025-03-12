@@ -87,7 +87,8 @@ class EPBEnergySensor(EPBSensorBase):
         if not self.coordinator.data or self.account_id not in self.coordinator.data:
             return None
 
-        return self.coordinator.data[self.account_id].get("kwh")
+        kwh = self.coordinator.data[self.account_id].get("kwh")
+        return float(kwh) if kwh is not None else None
 
 
 class EPBCostSensor(EPBSensorBase):
@@ -116,4 +117,5 @@ class EPBCostSensor(EPBSensorBase):
         if not self.coordinator.data or self.account_id not in self.coordinator.data:
             return None
 
-        return self.coordinator.data[self.account_id].get("cost")
+        cost = self.coordinator.data[self.account_id].get("cost")
+        return float(cost) if cost is not None else None
