@@ -7,8 +7,7 @@ from datetime import timedelta
 from typing import Any, Dict
 
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.update_coordinator import (DataUpdateCoordinator,
-                                                      UpdateFailed)
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import AccountLink, EPBApiClient, EPBApiError, EPBAuthError
 
@@ -43,7 +42,7 @@ class EPBUpdateCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
             data: Dict[str, Any] = {}
             for account in self.account_links:
                 account_id = account["power_account"]["account_id"]
-                gis_id = account["power_account"].get("gis_id")
+                gis_id = account.get("premise", {}).get("gis_id")
 
                 if account_id:
                     usage_data = await self.client.get_usage_data(account_id, gis_id)

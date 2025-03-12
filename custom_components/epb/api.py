@@ -16,13 +16,27 @@ class PowerAccount(TypedDict):
     """Type for power account data."""
 
     account_id: str
-    gis_id: Optional[str]
+    nickname: str
+    status: str
+
+
+class Premise(TypedDict):
+    """Type for premise data."""
+
+    city: str
+    full_service_address: str
+    gis_id: int
+    label: str
+    state: str
+    zip_code: str
+    zone_id: str
 
 
 class AccountLink(TypedDict):
     """Type for account link data."""
 
     power_account: PowerAccount
+    premise: Premise
 
 
 class EPBApiError(Exception):
@@ -204,7 +218,7 @@ class EPBApiClient:
             return {"kwh": 0.0, "cost": 0.0}
 
     async def get_usage_data(
-        self, account_id: str, gis_id: Optional[str]
+        self, account_id: str, gis_id: Optional[int]
     ) -> Dict[str, float]:
         """Get usage data for an account.
 
